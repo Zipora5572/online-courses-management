@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -12,17 +12,17 @@ import { AuthService } from '../../../services/auth.service';
   templateUrl: './header.component.html',
   styleUrl: './header.component.css'
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit {
   
   constructor(private authService: AuthService) {
   }
-
-  
-  isLoggedIn(){
-    return this.authService.isLoggedIn();
+  isLoggedIn: boolean = false;
+  ngOnInit(): void {
+    this.authService.getLoggedInStatus().subscribe(status => {
+      this.isLoggedIn = status; 
+    });
   }
   logout() {
     this.authService.logout();
-    
   }
 }

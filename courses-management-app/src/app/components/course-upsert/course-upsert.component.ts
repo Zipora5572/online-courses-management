@@ -1,5 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { CourseState, LessonState } from '../../../store/state';
@@ -15,7 +15,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
-
+import { isPlatformBrowser } from '@angular/common';
+import { PLATFORM_ID } from '@angular/core';
 @Component({
   selector: 'app-course-upsert',
   standalone: true,
@@ -44,6 +45,7 @@ export class CourseUpsertComponent implements OnInit {
     private store: Store<{ courses: CourseState, lessons: LessonState }>,
     private route: ActivatedRoute,
     private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object 
   ) {
     this.courseForm = this.fb.group({
       title: ['', Validators.required],
@@ -78,9 +80,12 @@ export class CourseUpsertComponent implements OnInit {
           });
         });
       }
-      this.courseForm.patchValue({
-        teacherId: sessionStorage.getItem('userId')
-      });
+      if (isPlatformBrowser(this.platformId)) {
+        this.courseForm.patchValue({
+          teacherId: sessionStorage.getItem('userId')
+        });
+      }
+     
     });
     this.store.dispatch(loadLessons({ courseId: this.courseId as number }));
   }

@@ -130,7 +130,11 @@ export class CourseUpsertComponent implements OnInit {
   }
 
   onSubmit() {
-    const teacherId = sessionStorage.getItem('userId');
+    const teacherId=null
+    if (typeof window !== 'undefined') {
+      const teacherId = sessionStorage.getItem('userId');
+    }
+
     const courseData = {
       ...this.courseForm.value,
       teacherId

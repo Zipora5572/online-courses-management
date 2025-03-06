@@ -14,7 +14,8 @@ interface AuthResponse {
 export class AuthService {
 
   private apiUrl = 'http://localhost:3000/api/auth';
-  private loggedInSubject = new BehaviorSubject<boolean>(this.isLoggedIn()); // משתנה שיבטא את מצב הכניסה
+  private loggedInSubject = new BehaviorSubject<boolean>(this.isLoggedIn()); 
+  private roleSubject = new BehaviorSubject<string>(this.getRole()); 
 
   constructor(private http: HttpClient) {}
 
@@ -58,6 +59,13 @@ export class AuthService {
     const loggedIn = typeof window !== 'undefined' ? !!this.getToken() : false;
 
     return loggedIn; 
+  }
+  getRole(): string {
+    if (typeof window!== 'undefined') {
+      const userId=sessionStorage.getItem('userId');
+      
+    }
+    return '';  // default role is 'guest'
   }
 
 

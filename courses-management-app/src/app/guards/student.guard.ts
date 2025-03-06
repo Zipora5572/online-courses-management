@@ -5,15 +5,19 @@ import { catchError, map, of } from 'rxjs';
 
 export const studentGuard: CanActivateFn = (route, state) => {
   const userService = inject(UserService)
-  const userId = Number(sessionStorage.getItem('userId'))
+  let userId =null;
+  if (typeof window !== 'undefined') {
+    userId= Number(sessionStorage.getItem('userId'))
+  }
   if (!userId) {
-    alert('Forbidden')
+    console.log('forbidden');
+
     return false
   }
   return userService.getUserById(userId).pipe(
     map(user => user.role === 'student'),
     catchError(err => {
-        alert('Error fetching user data')
+      console.log('Error fetching user data')
         return of(false); 
     })
 );

@@ -79,7 +79,7 @@ export class AuthComponent {
         this.router.navigate(['/home']);
       },
       error: error => {
-        console.error('Registration failed:', error);
+        // console.error('Registration failed:', error);
       },
     });
   }

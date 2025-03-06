@@ -6,8 +6,16 @@
 
   <nav class="nav-links">
     <a mat-button routerLink="/home" routerLinkActive="activebutton">Home</a>
-    <a mat-button routerLink="/courses-management" routerLinkActive="activebutton">Courses Management</a>
-    <a mat-button routerLink="/my-courses" routerLinkActive="activebutton">My Courses</a>
+    <a mat-button routerLink="/courses" routerLinkActive="activebutton">Courses</a>
+   <div>
+</div>
+  
+    <!-- @if((user$|async)?.role=='teacher'){ -->
+      <a mat-button routerLink="/courses-management" routerLinkActive="activebutton">Courses Management</a>
+    <!-- } -->
+    <!-- @if((user$|async)?.id!=0){ -->
+      <a mat-button routerLink="/my-courses" routerLinkActive="activebutton">My Courses</a>
+    <!-- } -->
     <a mat-button routerLink="/about" routerLinkActive="activebutton">About</a>
   </nav>
   

@@ -41,8 +41,11 @@
             }
           </div>
     }
-    <button class="add-lesson" mat-raised-button color="primary" (click)="addLesson()">Add Lesson
-      <span [innerHTML]="'add' | textToIcon"></span>
-    </button>
+    @if(role == 'teacher'){
+      <button class="add-lesson" mat-raised-button color="primary" (click)="addLesson()">Add Lesson
+        <span [innerHTML]="'add' | textToIcon"></span>
+      </button>
+    }
+   
    
   </div>

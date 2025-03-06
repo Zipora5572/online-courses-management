@@ -15,7 +15,7 @@ export interface AppState {
   }
   
   export interface UserState {
-    users: User[];
+    user: User
     loading: boolean;
     error: string | null;
   }
@@ -33,7 +33,7 @@ export interface AppState {
 };
 
 export const initialUserState: UserState = {
-    users: [],
+    user: new User(0,'','','','student'),
     loading: false,
     error: null
 };

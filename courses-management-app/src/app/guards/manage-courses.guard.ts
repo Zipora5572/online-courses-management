@@ -7,19 +7,25 @@ import { log } from 'console';
 
 export const manageCoursesGuard: CanActivateFn = (route, state)=> {
   const userService = inject(UserService)
-  const userId = Number(sessionStorage.getItem('userId'))
-
-
+  let userId=null
+  if (typeof window !== 'undefined') {
+     userId = Number(sessionStorage.getItem('userId'));
+  }
   if (!userId) {
-    alert('Forbidden')
+console.log('forbidden');
+
     return false
   }
   
   return userService.getUserById(userId).pipe(
    
-    map(user => user.role === 'teacher'),
+    map(user =>{
+     if(user.role != 'teacher')
+      console.log('forbidden');
+
+      return user.role === 'teacher'}),
     catchError(err => {
-        alert('Error fetching user data'+userId);
+        console.log('Error fetching user data'+userId);
         return of(false); 
     })
 );

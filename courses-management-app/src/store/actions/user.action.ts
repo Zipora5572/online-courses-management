@@ -20,3 +20,7 @@ export const deleteUser = createAction(
 export const getUsers = createAction(
     '[User] Get Users'
 );
+export const getUserById = createAction(
+    '[User] Get User By ID',
+    props<{ userId: number }>()
+);

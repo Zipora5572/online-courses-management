@@ -16,6 +16,7 @@ export const routes: Routes = [
     { path: 'upsert-course', component: CourseUpsertComponent },
     { path: 'courses-management', component: CourseManagementComponent, canActivate: [manageCoursesGuard] },
     { path: 'my-courses', component: MyCoursesComponent , canActivate: [studentGuard]},
+    { path: 'courses', component: MyCoursesComponent },
     { path: 'auth', component: AuthComponent },
     { path: 'about', component: AboutComponent },
     { path: 'home', component: HomeComponent },

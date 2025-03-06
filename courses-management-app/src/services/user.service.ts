@@ -59,12 +59,19 @@ export class UserService {
   }
 
   private handleError(error: HttpErrorResponse) {
-    let errorMessage = 'שגיאה לא ידועה';
-    if (error.error instanceof ErrorEvent) {
-      errorMessage = `שגיאה: ${error.error.message}`;
-    } else {
-      errorMessage = `שגיאה קוד: ${error.status}, ${error.message}`;
-    }
-    return throwError(errorMessage);
-  }
+    console.log('error', error);
+    
+     let errorMessage = 'error: ' + error.error.message;
+    // if (error.error instanceof ErrorEvent) {
+    //     // זה קוד שמריץ בצד הלקוח
+    //     errorMessage = `שגיאה: ${error.error.message}`;
+    // } else {
+    //     // זה קוד שמריץ בצד השרת
+    //     errorMessage = `שגיאה קוד: ${error.status}, ${error.message}`;
+    // }
+    // console.error(errorMessage); // הדפסת השגיאה לקונסול
+     return throwError(errorMessage); // החזרת השגיאה
+}
+
+
 }

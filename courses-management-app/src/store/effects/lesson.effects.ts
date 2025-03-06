@@ -17,7 +17,7 @@ export class LessonEffects {
         this.lessonService.getLessons(action.courseId).pipe(
           map(lessons => loadLessonsSuccess({ lessons })),
           catchError(error => {
-            console.error('Error loading lessons:', error)
+        //    console.error('Error loading lessons:', error)
             return of(loadLessonsFailure({ error }))
           })
         )
@@ -35,7 +35,7 @@ export class LessonEffects {
             return loadLessons({courseId:action.courseId}) 
           }),
           catchError(error => {
-            console.error('Error adding lesson:', error)
+           // console.error('Error adding lesson:', error)
             return of(loadLessonsFailure({ error }))
           })
         )
@@ -53,7 +53,7 @@ export class LessonEffects {
             return loadLessons({courseId:action.courseId}) 
           }),
           catchError(error => {
-            console.error('Error updating lesson:', error)
+          //  console.error('Error updating lesson:', error)
             return of(loadLessonsFailure({ error }))
           })
         )
@@ -71,7 +71,7 @@ export class LessonEffects {
             return loadLessons({courseId:action.courseId}) 
           }),
           catchError(error => {
-            console.error('Error deleting lesson:', error)
+            //console.error('Error deleting lesson:', error)
             return of(loadLessonsFailure({ error }))
           })
         )

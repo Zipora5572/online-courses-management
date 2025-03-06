@@ -17,7 +17,7 @@ export class CourseEffects {
         this.courseService.getCourses().pipe(
           map(courses => loadCoursesSuccess({ courses })),
           catchError(error => {
-            console.error('Error loading courses:', error);
+            //console.error('Error loading courses:', error);
             return of(loadCoursesFailure({ error }));
           })
         )
@@ -35,7 +35,7 @@ export class CourseEffects {
             return loadCourses();
           }),
           catchError(error => {
-            console.error('Error adding course:', error);
+         //   console.error('Error adding course:', error);
             return of(loadCoursesFailure({ error }));
           })
         )
@@ -53,7 +53,7 @@ export class CourseEffects {
             return loadCourses();
           }),
           catchError(error => {
-            console.error('Error updating course:', error);
+            //console.error('Error updating course:', error);
             return of(loadCoursesFailure({ error }));
           })
         )
@@ -71,7 +71,7 @@ export class CourseEffects {
             return loadCourses();
           }),
           catchError(error => {
-            console.error('Error deleting course:', error);
+           // console.error('Error deleting course:', error);
             return of(loadCoursesFailure({ error }));
           })
         )

@@ -1,0 +1,31 @@
+.course-form {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .lesson-form {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  mat-card {
+    margin-top: 16px;
+  }
+  
+  mat-card-title {
+    font-size: 1.5em;
+    margin-bottom: 16px;
+  }
+  
+  mat-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  mat-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+  }

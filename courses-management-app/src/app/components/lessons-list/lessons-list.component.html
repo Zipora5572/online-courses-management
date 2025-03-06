@@ -1,0 +1,48 @@
+<div class="lessons-list-container">
+  @if(role=='teacher'){
+    <div class="header">
+      <button class="flip-icon" mat-icon-button color="accent" (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon> 
+      </button>
+    </div>}
+    @if(loading$ | async){
+        <div class="loading-spinner">
+            <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+          </div>
+    }
+    
+    @if(!(loading$ | async)){
+        <div>
+            <mat-list role="list">
+                @for (lesson of (lessons$ | async); track lesson.id) {
+                    <mat-card class="lesson-card mat-elevation-z3">
+                      <mat-card-header>
+                        <mat-card-title> {{ lesson.title }}</mat-card-title>
+                      </mat-card-header>
+                      <mat-card-content>
+                        <p>{{ lesson.content }}</p>
+                      </mat-card-content>
+                      @if(role == 'teacher'){
+                      <mat-card-actions>
+                        <button mat-icon-button color="accent" (click)="editLesson(lesson)">
+                          <span [innerHTML]="'edit' | textToIcon"></span>
+                        </button>
+                        <button mat-icon-button color="warn" (click)="deleteLesson(lesson.id)">
+                          <span [innerHTML]="'delete' | textToIcon"></span>
+                        </button>
+                      </mat-card-actions>}
+                    </mat-card>
+                  }
+            </mat-list>
+            @if ((lessons$ | async)?.length === 0) {
+              <div class="no-lessons">
+                <p>No lessons available for this course.</p>
+              </div>
+            }
+          </div>
+    }
+    <button class="add-lesson" mat-raised-button color="primary" (click)="addLesson()">Add Lesson
+      <span [innerHTML]="'add' | textToIcon"></span>
+    </button>
+   
+  </div>

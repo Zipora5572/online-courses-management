@@ -1,0 +1,28 @@
+<div class="course-list-container">
+  <button mat-raised-button color="primary" class="full-width-icon-button" (click)="addCourse()">
+    <span [innerHTML]="'add' | textToIcon"></span>
+  </button>
+  <div class="course-list">
+    @for(course of (courses$ | async); track course.id) {
+      <mat-card class="course-list-item mat-elevation-z3">
+        <app-course-details
+          [id]="course.id"
+          [title]="course.title"
+          [description]="course.description"
+          [lessons]="course.lessons"
+          [teacherId]="course.teacherId"
+          [role]="'teacher'"
+          >      
+        </app-course-details>
+        <mat-card-actions>
+          <button mat-icon-button color="warn" (click)="deleteCourse(course.id)">
+            <span [innerHTML]="'delete' | textToIcon"></span>
+          </button>
+          <button mat-icon-button color="accent" (click)="updateCourse(course)">
+            <span [innerHTML]="'edit' | textToIcon"></span>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    }
+  </div>
+</div>

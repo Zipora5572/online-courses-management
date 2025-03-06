@@ -1,0 +1,13 @@
+<div class="course-details mat-elevation-z3">
+  <mat-card>
+    <mat-card-title>{{ title }}</mat-card-title>
+    <mat-card-content>
+      <p><strong>Course ID:</strong> {{ id }}</p>
+      <p><strong>Description:</strong> {{ description }}</p>
+      <p><strong>Teacher ID:</strong> {{ teacherId }}</p>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary" class="view-lessons-button"  [routerLink]="['/course', id, 'lessons']" [queryParams]="{ role: role }">View Lessons</button>
+    </mat-card-actions>
+  </mat-card>
+</div>

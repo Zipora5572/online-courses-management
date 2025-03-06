@@ -1,0 +1,124 @@
+.home-container {
+    padding: 0;
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background-color: #f0f0f0; /* Light gray background */
+  }
+  
+  .home-toolbar {
+    justify-content: center;
+  }
+  
+  /* Hero Section */
+  .hero-section {
+    background-image: url('/home.png'); /* Add your hero background image */
+    background-size: cover;
+    background-position: center;
+    color: white;
+    text-align: center;
+    padding: 100px 20px;
+  }
+  
+  .hero-content {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  
+  .hero-content h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+  }
+  
+  .hero-content p {
+    font-size: 1.2em;
+    margin-bottom: 40px;
+  }
+  
+  .hero-content button {
+    font-size: 1.2em;
+    padding: 10px 20px;
+  }
+  
+  /* Features Section */
+  .features-section {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    margin: 40px 0;
+  }
+  
+  .feature-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 300px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 10px;
+  }
+  
+  .feature-icon {
+    font-size: 50px;
+    color: #1976d2; /* Primary color */
+    margin-bottom: 10px;
+  }
+  
+  .feature-card h2 {
+    margin: 10px 0;
+    font-size: 1.5em;
+  }
+  
+  .feature-card p {
+    color: #555;
+  }
+  
+  /* Testimonials Section */
+  .testimonial-section {
+    background-color: #ffffff;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  
+  .testimonial-section h2 {
+    font-size: 2em;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .testimonial-card {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 10px auto;
+    max-width: 500px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .testimonial-card p {
+    font-style: italic;
+    color: #555;
+  }
+  
+  .testimonial-card strong {
+    display: block;
+    margin-top: 10px;
+    color: #1976d2; /* Primary color */
+  }
+  
+  /* Call to Action Section */
+  .cta-section {
+    background-color: #1976d2; /* Primary color */
+    color: white;
+    text-align: center;
+    padding: 40px 20px;
+  }
+  
+  .cta-section h2 {
+    font-size: 2em;
+    margin-bottom: 20px;
+  }
+  
+  .cta-section button {
+    font-size: 1.2em;
+    padding: 10px 20px;
+  }

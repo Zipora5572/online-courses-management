@@ -1,0 +1,24 @@
+<div>
+    <!-- <h2>Courses</h2> -->
+   
+    <ul>
+
+     
+        @for(course of (courses$ | async);track course.id){
+          <app-course-details
+          [id]="course.id"
+          [title]="course.title"
+          [description]="course.description"
+          [lessons]="course.lessons"
+          [teacherId]="course.teacherId"
+          [role]="'student'"
+          >
+        
+        </app-course-details>
+          
+            <button (click)="joinCourse(course.id)">join</button>
+        <button >leave</button>
+        }  
+    </ul>
+  </div>
+  

@@ -1,0 +1,50 @@
+<form [formGroup]="courseForm" (ngSubmit)="onSubmit()" class="course-form">
+  <mat-card>
+    <mat-card-title>Course Details</mat-card-title>
+    <mat-card-content>
+      <mat-form-field appearance="fill">
+        <mat-label>Title</mat-label>
+        <input matInput id="title" formControlName="title" />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill">
+        <mat-label>Description</mat-label>
+        <textarea matInput id="description" formControlName="description"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="fill">
+        <mat-label>Teacher ID</mat-label>
+        <input matInput id="teacherId" formControlName="teacherId" />
+      </mat-form-field>
+@if(courseId){
+  <ng-container >
+    <div formArrayName="lessons">
+      @for (lesson of lessons.controls; track lesson.value; let i = $index) {
+        <div [formGroupName]="i" class="lesson-form">
+          <mat-divider></mat-divider>
+          <mat-form-field appearance="fill">
+            <mat-label>Lesson Title</mat-label>
+            <input matInput id="title{{i}}" formControlName="title" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Lesson Content</mat-label>
+            <textarea matInput id="content{{i}}" formControlName="content"></textarea>
+          </mat-form-field>
+          <button mat-icon-button color="warn" type="button" (click)="removeLessonForm(i)">
+            <mat-icon>remove_circle</mat-icon>
+          </button>
+         
+        </div>
+      }
+    </div>
+    
+      <button mat-raised-button color="accent" type="button" (click)="addLessonForm(initialState)">Add Lesson</button>
+    </ng-container>
+}
+   
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary" type="submit">Submit</button>
+    </mat-card-actions>
+  </mat-card>
+</form>

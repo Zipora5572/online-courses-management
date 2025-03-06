@@ -1,0 +1,26 @@
+<mat-toolbar color="primary" class="app-toolbar">
+  <div class="logo-container">
+    <img src="online-learning.png" alt="Logo" />
+    <span class="courses-text">Courses Online</span>
+  </div>
+
+  <nav class="nav-links">
+    <a mat-button routerLink="/home" routerLinkActive="activebutton">Home</a>
+    <a mat-button routerLink="/courses-management" routerLinkActive="activebutton">Courses Management</a>
+    <a mat-button routerLink="/my-courses" routerLinkActive="activebutton">My Courses</a>
+    <a mat-button routerLink="/about" routerLinkActive="activebutton">About</a>
+  </nav>
+  
+  <span class="spacer"></span>
+
+  
+  @if(isLoggedIn()){
+    <button class="login-button" mat-button (click)="logout()">Logout</button>
+  }
+  @else {
+    <a mat-button routerLink="/auth" routerLinkActive="activebutton" ariaCurrentWhenActive="page" class="login-button">
+      Login 
+     
+    </a>
+  }
+</mat-toolbar>

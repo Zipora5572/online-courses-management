@@ -1,0 +1,38 @@
+.lessons-list-container {
+    background-color: #f0f0f0;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+  }
+  
+  .loading-spinner {
+    display: flex;
+    justify-content: center;
+    margin-top: 50px;
+  }
+  
+  .lesson-card {
+    background-color: #ffffff;
+    margin-bottom: 15px;
+    padding: 15px;
+    width: 100%;
+  }
+  
+  .no-lessons {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 1.2em;
+    color: #757575;
+  }
+  .flip-icon {
+    transform: scaleX(-1);
+  }
+  .add-lesson{
+    color: black !important;
+  }
+  

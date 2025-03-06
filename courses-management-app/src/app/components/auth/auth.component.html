@@ -1,0 +1,53 @@
+<mat-card class="auth-container">
+    <h2>{{ isLoginMode ? 'Login' : 'Sign Up' }}</h2>
+    <form [formGroup]="authForm" (ngSubmit)="onSubmit()">
+        @if(!isLoginMode){
+            <mat-form-field appearance="fill" class="form-group">
+                <mat-label>Name</mat-label>
+                <input matInput type="text" formControlName="name">
+                @if(authForm.get('name')?.invalid && authForm.get('name')?.touched) {
+                <mat-error>Name is required.</mat-error>
+                }
+            </mat-form-field>
+          
+        }
+        <mat-form-field appearance="fill" class="form-group">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email">
+            @if(authForm.get('email')?.invalid && authForm.get('email')?.touched) {
+            <mat-error>Please enter a valid email.</mat-error>
+            }
+        </mat-form-field>
+        @if(!isLoginMode){
+            <mat-form-field appearance="fill">
+                <mat-label>Role</mat-label>
+                <mat-select formControlName="role" required>
+                  @for (role of roles;track role) {
+                    <mat-option [value]="role">{{ role }}</mat-option>
+                  }
+                </mat-select>
+                @if (authForm.get('role')?.touched && authForm.get('role')?.hasError('required')) {
+                  <mat-error>Role is required.</mat-error>
+                }
+              </mat-form-field>
+          
+        }
+        <mat-form-field appearance="fill" class="form-group">
+            <mat-label>Password</mat-label>
+            <input matInput type="password" formControlName="password">
+            @if(authForm.get('password')?.invalid && authForm.get('password')?.touched) {
+            <mat-error>Password must be at least 6 characters long.</mat-error>
+            }
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="submit" [disabled]="authForm.invalid">{{ isLoginMode ? 'Login' :
+            'Sign Up' }}</button>
+  
+  <button mat-button type="button" (click)="onSwitchMode()">
+    Don't have an account? Sign Up
+</button>
+
+    </form>
+  
+   
+</mat-card>

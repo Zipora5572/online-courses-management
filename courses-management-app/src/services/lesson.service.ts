@@ -13,21 +13,30 @@ export class LessonService {
   constructor(private http: HttpClient) {}
 
   getLessons(courseId: number): Observable<Lesson[]> {
+    if(courseId!=null)
     return this.http.get<Lesson[]>(`${this.apiUrl}/${courseId}/lessons`).pipe(
       catchError(this.handleError)
     )
+    else
+    return throwError('Course ID is required');
   }
 
   getLessonById(courseId: number, id: number): Observable<Lesson> {
+    if(courseId!=null)
     return this.http.get<Lesson>(`${this.apiUrl}/${courseId}/lessons/${id}`).pipe(
       catchError(this.handleError)
     )
+    else
+    return throwError('Course ID is required');
   }
 
   addLesson(courseId: number, lesson: Lesson): Observable<{ message: string, lessonId: number }> {
+    if(courseId!=null)
     return this.http.post<{ message: string, lessonId: number }>(`${this.apiUrl}/${courseId}/lessons`, lesson).pipe(
       catchError(this.handleError)
     )
+    else
+    return throwError('Course ID is required');
     
   }
 

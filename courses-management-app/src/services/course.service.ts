@@ -16,9 +16,14 @@ export class CourseService {
 
   
   getCourses(): Observable<Course[]> {
-    return this.http.get<Course[]>(this.apiUrl).pipe(
-      catchError(this.handleError)
-    );
+    if (typeof window !== 'undefined') {
+      if(sessionStorage.getItem('authToken') != null) 
+        return this.http.get<Course[]>(this.apiUrl).pipe(
+          catchError(this.handleError)
+        );
+        else return throwError('User not logged in');
+   }
+    else return throwError('User not logged in');
   }
 
   getCourseById(id: number): Observable<Course> {

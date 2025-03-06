@@ -15,7 +15,9 @@ export class LessonEffects {
       ofType(loadLessons),
       mergeMap(action =>
         this.lessonService.getLessons(action.courseId).pipe(
-          map(lessons => loadLessonsSuccess({ lessons })),
+         
+          
+          map(lessons =>  loadLessonsSuccess({ lessons })),
           catchError(error => {
         //    console.error('Error loading lessons:', error)
             return of(loadLessonsFailure({ error }))

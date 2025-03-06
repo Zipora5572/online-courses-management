@@ -38,10 +38,10 @@ export class LessonsListComponent implements OnInit {
   
     this.route.params.subscribe(params => {
       this.id = +params['id'];
-
-      this.store.dispatch(loadLessons({ courseId: this.id }));
+if(this.id)
+    {  this.store.dispatch(loadLessons({ courseId: this.id }));
       this.lessons$ = this.store.select(selectLessonsByCourseId(this.id));
-      this.loading$ = this.store.select(selectLoading);
+      this.loading$ = this.store.select(selectLoading);}
     });
 
     this.route.queryParams.subscribe(params => {

@@ -1,15 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Course } from '../../../models/course.model';
-import { selectAllCourses, selectCourseState, selectCurrentUserCourses, selectLoading } from '../../../store/selectors/course.selector';
-import { Router } from '@angular/router';
-import { select, Store } from '@ngrx/store';
-import { enrollInCourse, loadCourses, loadCoursesByStudentId, unenrollInCourse } from '../../../store/actions/course.actions';
+import { selectCurrentUserCourses, selectLoading } from '../../../store/selectors/course.selector';
+import { Store } from '@ngrx/store';
+import { enrollInCourse, loadCoursesByStudentId, unenrollInCourse } from '../../../store/actions/course.actions';
 import { CourseDetailsComponent } from "../course-details/course-details.component";
 import { AsyncPipe } from '@angular/common';
-import { selectCurrentUser, selectUserState } from '../../../store/selectors/user.selector';
+import { selectCurrentUser } from '../../../store/selectors/user.selector';
 import { User } from '../../../models/user.model';
-import { UserState } from '../../../store/state';
 import { loadUser } from '../../../store/actions/user.action';
 
 @Component({
@@ -25,7 +23,7 @@ export class MyCoursesComponent implements OnInit {
   loading$: Observable<boolean>;
   user$: Observable<User|null>;
   userId: number|undefined=undefined;
-  constructor(private store: Store,private router: Router) {
+  constructor(private store: Store) {
     this.user$ = this.store.select(selectCurrentUser);
     this.loading$ = this.store.select(selectLoading);
     this.store.dispatch(loadUser())

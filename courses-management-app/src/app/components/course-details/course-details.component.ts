@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { Lesson } from '../../../models/lesson.model';
-import { Router, RouterModule } from '@angular/router';
+import {  RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -13,9 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class CourseDetailsComponent {
 
-constructor(private router: Router) {{}
 
-}
 
   @Input() id: number 
   @Input() title: string

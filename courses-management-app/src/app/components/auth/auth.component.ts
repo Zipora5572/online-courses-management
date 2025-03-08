@@ -7,7 +7,7 @@ import { MatOptionModule } from '@angular/material/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../../services/auth.service';
-import { User, UserRole } from '../../../models/user.model';
+import {  UserRole } from '../../../models/user.model';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { loginUser } from '../../../store/actions/user.action';

@@ -1,9 +1,8 @@
 import { inject } from '@angular/core';
 import { CanActivateFn } from '@angular/router';
 import { UserService } from '../../services/user.service';
-import { Observable, of } from 'rxjs';
+import {  of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
-import { log } from 'console';
 
 export const manageCoursesGuard: CanActivateFn = (route, state)=> {
   const userService = inject(UserService)

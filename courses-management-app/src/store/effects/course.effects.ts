@@ -4,7 +4,6 @@ import { of } from 'rxjs';
 import { catchError, map, mergeMap } from 'rxjs/operators';
 import { CourseService } from '../../services/course.service';
 import { loadCourses, loadCoursesSuccess, loadCoursesFailure, addCourse, updateCourse, deleteCourse, enrollInCourse, enrollInCourseSuccess, enrollInCourseFailure, unenrollInCourseSuccess, unenrollInCourseFailure, loadCoursesByStudentId, loadCoursesSuccessByStudentId, loadCoursesFailureByStudentId, unenrollInCourse } from '../actions/course.actions';
-import { Action } from 'rxjs/internal/scheduler/Action';
 
 @Injectable()
 export class CourseEffects {

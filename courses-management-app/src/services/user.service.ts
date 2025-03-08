@@ -2,13 +2,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-
-export interface User {
-  role: string;
-  id: number;
-  name: string;
-  email: string;
-}
+import { User } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root'

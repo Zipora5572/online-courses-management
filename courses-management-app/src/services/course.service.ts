@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, tap } from 'rxjs/operators';
 import { Course } from '../models/course.model';
 import { cp } from 'fs';
 
@@ -31,6 +31,11 @@ export class CourseService {
       catchError(this.handleError)
     );
   }
+  getCoursesByStudentId(studentId: number|undefined): Observable<Course[]> {
+    return this.http.get<Course[]>(`${this.apiUrl}/student/${studentId}`).pipe(
+      catchError(this.handleError)
+    );
+  }
 
   addCourse(course: Course): Observable<Course> {
     return this.http.post<Course>(this.apiUrl, {...course,teacherId:sessionStorage.getItem('userId')}).pipe(
@@ -52,20 +57,15 @@ export class CourseService {
   }
   enrollInCourse(courseId: string) {
     const userId = sessionStorage.getItem('userId'); 
+    return this.http.post(`${this.apiUrl}/${courseId}/enroll`, { userId }).pipe(
    
-  
-    return this.http.post(`${this.apiUrl}/${courseId}/enroll`, { userId }, 
-    ).pipe(
       catchError(this.handleError)
     );
-    
   }
   unEnrollInCourse(courseId: string) {
     const userId = sessionStorage.getItem('userId'); 
+    return this.http.delete(`${this.apiUrl}/${courseId}/unenroll`, { body: { userId } }).pipe(
    
-  
-    return this.http.post(`${this.apiUrl}/${courseId}/unenroll`, { userId }, 
-    ).pipe(
       catchError(this.handleError)
     );
     

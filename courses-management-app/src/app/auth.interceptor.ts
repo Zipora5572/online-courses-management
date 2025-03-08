@@ -6,12 +6,10 @@ import { AuthService } from '../services/auth.service';
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   const authToken = inject(AuthService).getToken();
-  if(req.url.includes('/courses'))
-    console.log(authToken);
-    
+  
+  
   if (!req.url.includes('/login') && !req.url.includes('/register')) {
     if (authToken) {
- 
       req = req.clone({
         setHeaders: {
           Authorization: `Bearer ${authToken}`

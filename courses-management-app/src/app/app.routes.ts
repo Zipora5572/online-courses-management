@@ -10,13 +10,14 @@ import { MyCoursesComponent } from './components/my-courses/my-courses.component
 import { LessonsListComponent } from './components/lessons-list/lessons-list.component';
 import { manageCoursesGuard } from './guards/manage-courses.guard';
 import { studentGuard } from './guards/student.guard';
+import { CoursesComponent } from './components/courses/courses.component';
 
 export const routes: Routes = [
     { path: 'header', component: HeaderComponent },
     { path: 'upsert-course', component: CourseUpsertComponent },
     { path: 'courses-management', component: CourseManagementComponent, canActivate: [manageCoursesGuard] },
     { path: 'my-courses', component: MyCoursesComponent , canActivate: [studentGuard]},
-    { path: 'courses', component: MyCoursesComponent },
+    { path: 'courses', component: CoursesComponent },
     { path: 'auth', component: AuthComponent },
     { path: 'about', component: AboutComponent },
     { path: 'home', component: HomeComponent },

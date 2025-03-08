@@ -8,9 +8,8 @@ import { Store } from '@ngrx/store';
 import { select } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { User } from '../../../models/user.model';
-import { getUserById } from '../../../store/actions/user.action';
-import { selectUser } from '../../../store/selectors/user.selector';
 import { AsyncPipe } from '@angular/common';
+import { selectCurrentUser } from '../../../store/selectors/user.selector';
 
 @Component({
   selector: 'app-header',
@@ -22,7 +21,7 @@ import { AsyncPipe } from '@angular/common';
 export class HeaderComponent implements OnInit {
   
   constructor(private authService: AuthService,private store: Store) {}
-  user$: Observable<User>
+  user$: Observable<User|null>
 
 
 
@@ -32,8 +31,10 @@ export class HeaderComponent implements OnInit {
       this.isLoggedIn = status; 
     });
     if (typeof window !== 'undefined') {
-      this.user$ = this.store.select(selectUser(Number(sessionStorage.getItem('userId'))));
+      this.user$ = this.store.select(selectCurrentUser)
+      
     
+      
   }}
 
   logout() {

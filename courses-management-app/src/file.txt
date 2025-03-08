@@ -1,0 +1,3245 @@
+// Source: app\app.component.css
+// Source: app\app.component.html
+<app-header></app-header>
+
+<router-outlet></router-outlet>
+ 
+// Source: app\app.component.spec.ts
+import { TestBed } from '@angular/core/testing';
+import { AppComponent } from './app.component';
+
+describe('AppComponent', () => {
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [AppComponent],
+    }).compileComponents();
+  });
+
+  it('should create the app', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.componentInstance;
+    expect(app).toBeTruthy();
+  });
+
+  it(`should have the 'courses-management-app' title`, () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.componentInstance;
+    expect(app.title).toEqual('courses-management-app');
+  });
+
+  it('should render title', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, courses-management-app');
+  });
+});
+// Source: app\app.component.ts
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { HeaderComponent } from "./components/header/header.component";
+import { AuthComponent } from "./components/auth/auth.component";
+import { CourseManagementComponent } from "./components/course-management/course-management.component";
+import { CourseUpsertComponent } from "./components/course-upsert/course-upsert.component";
+import { Store } from '@ngrx/store';
+import { CourseState } from '../store/state';
+import { loadCourses } from '../store/actions/course.actions';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet, HeaderComponent, AuthComponent, CourseManagementComponent],
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.css'
+})
+export class AppComponent {
+ constructor(private store: Store<{ courses: CourseState }>) {
+  //  this.store.dispatch(loadCourses());
+ }
+}
+// Source: app\app.config.server.ts
+import { mergeApplicationConfig, ApplicationConfig } from '@angular/core';
+import { provideServerRendering } from '@angular/platform-server';
+import { appConfig } from './app.config';
+
+const serverConfig: ApplicationConfig = {
+  providers: [
+    provideServerRendering()
+  ]
+};
+
+export const config = mergeApplicationConfig(appConfig, serverConfig);
+// Source: app\app.config.ts
+import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { provideRouter } from '@angular/router';
+import { routes } from './app.routes';
+import { provideClientHydration } from '@angular/platform-browser';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideStore } from '@ngrx/store';
+import { provideEffects } from '@ngrx/effects'; // הוסף את זה
+import { courseReducer } from '../store/reducers/course.reducers';
+import { CourseEffects } from '../store/effects/course.effects'; // הוסף את זה
+import { lessonReducer } from '../store/reducers/lesson.reducer';
+import { LessonEffects } from '../store/effects/lesson.effects';
+import { authInterceptor } from './auth.interceptor';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideRouter(routes),
+    provideClientHydration(),
+    provideAnimationsAsync(),
+    provideHttpClient(),
+    provideStore({ 
+      courses: courseReducer, 
+      lessons: lessonReducer
+    }), 
+    provideEffects([CourseEffects, LessonEffects]) ,
+     provideHttpClient(withInterceptors([authInterceptor])),
+
+  ]
+};
+// Source: app\app.routes.ts
+import { Routes } from '@angular/router';
+import { HeaderComponent } from './components/header/header.component';
+import { HomeComponent } from './components/home/home.component';
+import { CourseDetailsComponent } from './components/course-details/course-details.component';
+import { AuthComponent } from './components/auth/auth.component';
+import { AboutComponent } from './components/about/about.component';
+import { CourseManagementComponent } from './components/course-management/course-management.component';
+import { CourseUpsertComponent } from './components/course-upsert/course-upsert.component';
+import { MyCoursesComponent } from './components/my-courses/my-courses.component';
+import { LessonsListComponent } from './components/lessons-list/lessons-list.component';
+import { manageCoursesGuard } from './guards/manage-courses.guard';
+import { studentGuard } from './guards/student.guard';
+import { CoursesComponent } from './components/courses/courses.component';
+
+export const routes: Routes = [
+    { path: 'header', component: HeaderComponent },
+    { path: 'upsert-course', component: CourseUpsertComponent },
+    { path: 'courses-management', component: CourseManagementComponent, canActivate: [manageCoursesGuard] },
+    { path: 'my-courses', component: MyCoursesComponent , canActivate: [studentGuard]},
+    { path: 'courses', component: CoursesComponent },
+    { path: 'auth', component: AuthComponent },
+    { path: 'about', component: AboutComponent },
+    { path: 'home', component: HomeComponent },
+    { path: 'course/:id/lessons', component: LessonsListComponent },
+    { path: '', redirectTo: '/home', pathMatch: 'full' },
+    { path: 'course/:id', component: CourseDetailsComponent },
+    ];
+// Source: app\auth.interceptor.spec.ts
+import { TestBed } from '@angular/core/testing';
+import { HttpInterceptorFn } from '@angular/common/http';
+
+import { authInterceptor } from './auth.interceptor';
+
+describe('authInterceptor', () => {
+  const interceptor: HttpInterceptorFn = (req, next) => 
+    TestBed.runInInjectionContext(() => authInterceptor(req, next));
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+  });
+
+  it('should be created', () => {
+    expect(interceptor).toBeTruthy();
+  });
+});
+// Source: app\auth.interceptor.ts
+import { HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { AuthService } from '../services/auth.service';
+
+
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+
+  const authToken = inject(AuthService).getToken();
+  if(req.url.includes('/courses'))
+    console.log(authToken);
+    
+  if (!req.url.includes('/login') && !req.url.includes('/register')) {
+    if (authToken) {
+ 
+      req = req.clone({
+        setHeaders: {
+          Authorization: `Bearer ${authToken}`
+        }
+      });
+    }
+  }
+  return next(req); 
+};
+// Source: app\components\about\about.component.css
+.about-container {
+    /* padding: 20px; */
+    text-align: center;
+    background-color: #f9f9f9;
+
+    height: 100vh;
+  }
+  
+  .about-section {
+    margin: 20px 0;
+  
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: inline-block;
+    width: 250px;
+  }
+  
+  .about-section mat-icon {
+    font-size: 48px;
+    color: #3f51b5;
+  }
+  
+  .about-section h2 {
+    font-size: 20px;
+    margin: 10px 0;
+  }
+  
+  .about-section p {
+    font-size: 14px;
+    color: #666;
+  }
+  
+// Source: app\components\about\about.component.html
+<div class="about-container">
+    
+    <div class="about-section">
+      <mat-icon>school</mat-icon>
+      <h2>Quality Education</h2>
+      <p>We provide high-quality courses taught by experienced instructors.</p>
+    </div>
+    
+    <div class="about-section">
+      <mat-icon>access_time</mat-icon>
+      <h2>Flexible Learning</h2>
+      <p>Learn at your own pace, anytime and anywhere.</p>
+    </div>
+    
+    <div class="about-section">
+      <mat-icon>support</mat-icon>
+      <h2>24/7 Support</h2>
+      <p>Our support team is here to help you whenever you need assistance.</p>
+    </div>
+    
+    <div class="about-section">
+      <mat-icon>group</mat-icon>
+      <h2>Community Engagement</h2>
+      <p>Join a community of learners and share your experiences.</p>
+    </div>
+  </div>
+  
+// Source: app\components\about\about.component.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { AboutComponent } from './about.component';
+
+describe('AboutComponent', () => {
+  let component: AboutComponent;
+  let fixture: ComponentFixture<AboutComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [AboutComponent]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(AboutComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+// Source: app\components\about\about.component.ts
+import { Component } from '@angular/core';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+
+@Component({
+  selector: 'app-about',
+  standalone: true,
+  imports: [
+    MatCardModule,
+    MatIconModule
+  ],
+  templateUrl: './about.component.html',
+  styleUrls: ['./about.component.css']
+})
+export class AboutComponent {}
+// Source: app\components\auth\auth.component.css
+.auth-container {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.26);
+    text-align: center;
+  }
+  
+  .auth-container h2 {
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  button {
+    width: 100%;
+    margin-top: 10px;
+  }
+// Source: app\components\auth\auth.component.html
+<mat-card class="auth-container">
+    <h2>{{ isLoginMode ? 'Login' : 'Sign Up' }}</h2>
+    <form [formGroup]="authForm" (ngSubmit)="onSubmit()">
+        @if(!isLoginMode){
+            <mat-form-field appearance="fill" class="form-group">
+                <mat-label>Name</mat-label>
+                <input matInput type="text" formControlName="name">
+                @if(authForm.get('name')?.invalid && authForm.get('name')?.touched) {
+                <mat-error>Name is required.</mat-error>
+                }
+            </mat-form-field>
+          
+        }
+        <mat-form-field appearance="fill" class="form-group">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email">
+            @if(authForm.get('email')?.invalid && authForm.get('email')?.touched) {
+            <mat-error>Please enter a valid email.</mat-error>
+            }
+        </mat-form-field>
+        @if(!isLoginMode){
+            <mat-form-field appearance="fill">
+                <mat-label>Role</mat-label>
+                <mat-select formControlName="role" required>
+                  @for (role of roles;track role) {
+                    <mat-option [value]="role">{{ role }}</mat-option>
+                  }
+                </mat-select>
+                @if (authForm.get('role')?.touched && authForm.get('role')?.hasError('required')) {
+                  <mat-error>Role is required.</mat-error>
+                }
+              </mat-form-field>
+          
+        }
+        <mat-form-field appearance="fill" class="form-group">
+            <mat-label>Password</mat-label>
+            <input matInput type="password" formControlName="password">
+            @if(authForm.get('password')?.invalid && authForm.get('password')?.touched) {
+            <mat-error>Password must be at least 6 characters long.</mat-error>
+            }
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="submit" [disabled]="authForm.invalid">{{ isLoginMode ? 'Login' :
+            'Sign Up' }}</button>
+  
+  <button mat-button type="button" (click)="onSwitchMode()">
+    Don't have an account? Sign Up
+</button>
+
+    </form>
+  
+   
+</mat-card>
+// Source: app\components\auth\auth.component.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { AuthComponent } from './auth.component';
+
+describe('AuthComponent', () => {
+  let component: AuthComponent;
+  let fixture: ComponentFixture<AuthComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [AuthComponent]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(AuthComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+// Source: app\components\auth\auth.component.ts
+import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatButtonModule } from '@angular/material/button';
+import { MatOptionModule } from '@angular/material/core';
+import { MatCardModule } from '@angular/material/card';
+import { MatSelectModule } from '@angular/material/select';
+import { AuthService } from '../../../services/auth.service';
+import { User, UserRole } from '../../../models/user.model';
+import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { loginUser } from '../../../store/actions/user.action';
+
+@Component({
+  selector: 'app-auth',
+  standalone: true,
+  imports: [ReactiveFormsModule, MatOptionModule, FormsModule, MatSelectModule, MatInputModule, MatFormFieldModule, MatButtonModule, MatCardModule],
+  templateUrl: './auth.component.html',
+  styleUrls: ['./auth.component.css']
+})
+export class AuthComponent {
+
+  authForm: FormGroup;
+  isLoginMode: boolean = true;
+  roles: UserRole[] = ['teacher', 'student'];
+
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router,
+    private store: Store
+  ) {
+    this.initializeForm();
+  }
+
+  initializeForm() {
+    this.authForm = this.fb.group({
+      name: ['', this.isLoginMode ? null : Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      role: ['', this.isLoginMode ? null : Validators.required],
+    });
+  }
+
+  onSwitchMode() {
+    this.isLoginMode = !this.isLoginMode;
+
+    // Update validators based on the mode
+    if (this.isLoginMode) {
+      this.authForm.get('name')?.clearValidators();
+      this.authForm.get('role')?.clearValidators();
+    } else {
+      this.authForm.get('name')?.setValidators(Validators.required);
+      this.authForm.get('role')?.setValidators(Validators.required);
+    }
+
+    // Update the form controls to reflect changes
+    this.authForm.get('name')?.updateValueAndValidity();
+    this.authForm.get('role')?.updateValueAndValidity();
+  }
+
+  onSubmit() {
+    if (this.authForm.invalid) {
+      return;
+    }
+
+    const { name, email, password, role } = this.authForm.value;
+
+    if (this.isLoginMode) {
+      this.login(email, password);
+    } else {
+      this.signUp(name, email, password, role);
+    }
+  }
+
+  login(email: string, password: string) {
+    this.authService.login(email, password).subscribe(response => {
+      this.store.dispatch(loginUser({ email, password }));
+      this.router.navigate(['/home']);
+    });
+  }
+
+  signUp(name: string, email: string, password: string, role: string) {
+    this.authService.register(name, email, password, role).subscribe({
+      next: response => {
+        this.router.navigate(['/home']);
+      },
+      error: error => {
+        // console.error('Registration failed:', error);
+      },
+    });
+  }
+
+  logout() {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+}
+// Source: app\components\course-details\course-details.component.css
+/* .course-details {
+    width: 100%;
+  } */
+  .view-lessons-button {
+    border: none; 
+    font-size: 18px; 
+    font-weight: bold;
+    color: #ffffff; 
+    background-color: #91dadc; 
+    padding: 10px 20px;
+    border-radius: 4px; 
+    cursor: pointer; 
+  }
+  
+  .view-lessons-button:hover {
+    background-color: #278f93; 
+    color: white;
+  }
+  
+   .course-details {
+    margin: 16px 0;
+  
+  }
+  
+  mat-card {
+    padding: 16px;
+    border-radius: 0;
+  }
+  
+  mat-card-title {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #333; 
+    margin-bottom: 16px; 
+    text-align: center;
+  }
+  
+  mat-card-content p {
+    margin: 0 0 8px;
+    color: #555; 
+  }
+  
+  mat-card-actions {
+    display: flex;
+    justify-content: flex-end; 
+    margin-top: 16px; 
+  }
+  
+// Source: app\components\course-details\course-details.component.html
+<div class="course-details mat-elevation-z3">
+  <mat-card>
+    <mat-card-title>{{ title }}</mat-card-title>
+    <mat-card-content>
+      <p><strong>Course ID:</strong> {{ id }}</p>
+      <p><strong>Description:</strong> {{ description }}</p>
+      <p><strong>Teacher ID:</strong> {{ teacherId }}</p>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary" class="view-lessons-button"  [routerLink]="['/course', id, 'lessons']" [queryParams]="{ role: role }">View Lessons</button>
+    </mat-card-actions>
+  </mat-card>
+</div>
+// Source: app\components\course-details\course-details.component.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { CourseDetailsComponent } from './course-details.component';
+
+describe('CourseDetailsComponent', () => {
+  let component: CourseDetailsComponent;
+  let fixture: ComponentFixture<CourseDetailsComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [CourseDetailsComponent]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(CourseDetailsComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+// Source: app\components\course-details\course-details.component.ts
+import { Component, Input } from '@angular/core';
+import { Lesson } from '../../../models/lesson.model';
+import { Router, RouterModule } from '@angular/router';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+
+@Component({
+  selector: 'app-course-details',
+  standalone: true,
+  imports: [RouterModule,MatCardModule,MatIconModule],
+  templateUrl: './course-details.component.html',
+  styleUrl: './course-details.component.css'
+})
+export class CourseDetailsComponent {
+
+constructor(private router: Router) {{}
+
+}
+
+  @Input() id: number 
+  @Input() title: string
+  @Input() description: string
+  @Input() teacherId : number 
+  @Input() lessons: Lesson[];
+  @Input() role: string; 
+
+}
+// Source: app\components\course-management\course-management.component.css
+
+
+  .course-list-container {
+    background-color: #f0f0f0; 
+    padding: 20px;
+    min-height: 100vh;
+  }
+  
+  .course-list-container {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .full-width-icon-button {
+    width: 50%;
+    margin-bottom: 20px;
+  }
+  
+  .course-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 50%;
+    max-width: 800px;
+  }
+  
+  .course-list-item {
+    background-color: #ffffff; /* White background for the card */
+    padding: 16px;
+  }
+  
+  mat-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  
+  mat-card {
+    border-radius: 8px; /* Rounded corners for the card */
+  }
+  
+// Source: app\components\course-management\course-management.component.html
+<div class="course-list-container">
+  <button mat-raised-button color="primary" class="full-width-icon-button" (click)="addCourse()">
+    <span [innerHTML]="'add' | textToIcon"></span>
+  </button>
+  <div class="course-list">
+    @for(course of (courses$ | async); track course.id) {
+      <mat-card class="course-list-item mat-elevation-z3">
+        <app-course-details
+          [id]="course.id"
+          [title]="course.title"
+          [description]="course.description"
+          [lessons]="course.lessons"
+          [teacherId]="course.teacherId"
+          [role]="'teacher'"
+          >      
+        </app-course-details>
+        <mat-card-actions>
+          <button mat-icon-button color="warn" (click)="deleteCourse(course.id)">
+            <span [innerHTML]="'delete' | textToIcon"></span>
+          </button>
+          <button mat-icon-button color="accent" (click)="updateCourse(course)">
+            <span [innerHTML]="'edit' | textToIcon"></span>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    }
+  </div>
+</div>
+// Source: app\components\course-management\course-management.component.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { CourseManagementComponent } from './course-management.component';
+
+describe('CourseManagementComponent', () => {
+  let component: CourseManagementComponent;
+  let fixture: ComponentFixture<CourseManagementComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [CourseManagementComponent]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(CourseManagementComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+// Source: app\components\course-management\course-management.component.ts
+import { AsyncPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { CourseDetailsComponent } from "../course-details/course-details.component";
+import { Component, OnInit } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { Observable } from 'rxjs';
+import { loadCourses,deleteCourse } from '../../../store/actions/course.actions';
+import { Course } from '../../../models/course.model';
+import { selectAllCourses, selectLoading } from '../../../store/selectors/course.selector';
+import { Router } from '@angular/router';
+import { log } from 'console';
+import { MatButtonModule, MatIconButton } from '@angular/material/button';
+import { MatListModule } from '@angular/material/list';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { TextToIconPipe } from "../../pipes/text-to-icon.pipe";
+
+
+@Component({
+  selector: 'app-course-management',
+  standalone: true,
+  imports: [AsyncPipe, FormsModule, CourseDetailsComponent,
+    MatCardModule,
+    MatButtonModule,
+    MatListModule,
+    MatIconModule,
+    MatIconButton, TextToIconPipe],
+  templateUrl: './course-management.component.html',
+  styleUrls: ['./course-management.component.css']
+})
+export class CourseManagementComponent implements OnInit {
+  courses$: Observable<Course[]>;
+  loading$: Observable<boolean>;
+
+  constructor(private store: Store,private router: Router) {
+    this.courses$ = this.store.select(selectAllCourses);
+    this.loading$ = this.store.select(selectLoading);
+  }
+
+  ngOnInit() {
+    this.store.dispatch(loadCourses());
+  }
+
+  addCourse() {
+    this.router.navigate(['/upsert-course'])
+  }
+  
+ 
+  updateCourse(course: Course) {
+    this.router.navigate(['/upsert-course', { id: course.id }]); 
+  }
+
+  deleteCourse(courseId: number) {
+    this.store.dispatch(deleteCourse({ courseId }));
+  }
+}
+// Source: app\components\course-upsert\course-upsert.component.css
+.course-form {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .lesson-form {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  mat-card {
+    margin-top: 16px;
+  }
+  
+  mat-card-title {
+    font-size: 1.5em;
+    margin-bottom: 16px;
+  }
+  
+  mat-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  mat-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+  }
+// Source: app\components\course-upsert\course-upsert.component.html
+<form [formGroup]="courseForm" (ngSubmit)="onSubmit()" class="course-form">
+  <mat-card>
+    <mat-card-title>Course Details</mat-card-title>
+    <mat-card-content>
+      <mat-form-field appearance="fill">
+        <mat-label>Title</mat-label>
+        <input matInput id="title" formControlName="title" />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill">
+        <mat-label>Description</mat-label>
+        <textarea matInput id="description" formControlName="description"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="fill">
+        <mat-label>Teacher ID</mat-label>
+        <input matInput id="teacherId" formControlName="teacherId" />
+      </mat-form-field>
+@if(courseId){
+  <ng-container >
+    <div formArrayName="lessons">
+      @for (lesson of lessons.controls; track lesson.value; let i = $index) {
+        <div [formGroupName]="i" class="lesson-form">
+          <mat-divider></mat-divider>
+          <mat-form-field appearance="fill">
+            <mat-label>Lesson Title</mat-label>
+            <input matInput id="title{{i}}" formControlName="title" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Lesson Content</mat-label>
+            <textarea matInput id="content{{i}}" formControlName="content"></textarea>
+          </mat-form-field>
+          <button mat-icon-button color="warn" type="button" (click)="removeLessonForm(i)">
+            <mat-icon>remove_circle</mat-icon>
+          </button>
+         
+        </div>
+      }
+    </div>
+    
+      <button mat-raised-button color="accent" type="button" (click)="addLessonForm(initialState)">Add Lesson</button>
+    </ng-container>
+}
+   
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary" type="submit">Submit</button>
+    </mat-card-actions>
+  </mat-card>
+</form>
+// Source: app\components\course-upsert\course-upsert.component.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { CourseUpsertComponent } from './course-upsert.component';
+
+describe('CourseUpsertComponent', () => {
+  let component: CourseUpsertComponent;
+  let fixture: ComponentFixture<CourseUpsertComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [CourseUpsertComponent]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(CourseUpsertComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+// Source: app\components\course-upsert\course-upsert.component.ts
+import { AsyncPipe } from '@angular/common';
+import { Component, Inject, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, FormArray, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Store } from '@ngrx/store';
+import { CourseState, LessonState } from '../../../store/state';
+import { addCourse, updateCourse } from '../../../store/actions/course.actions';
+import { ActivatedRoute, Router } from '@angular/router';
+import { addLesson, deleteLesson, loadLessons, updateLesson } from '../../../store/actions/lesson.action';
+import { selectCourseById } from '../../../store/selectors/course.selector';
+import { Lesson } from '../../../models/lesson.model';
+import { selectLessonsByCourseId } from '../../../store/selectors/lesson.selector';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
+import { isPlatformBrowser } from '@angular/common';
+import { PLATFORM_ID } from '@angular/core';
+@Component({
+  selector: 'app-course-upsert',
+  standalone: true,
+  imports: [
+    FormsModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatCardModule,
+    MatDividerModule
+  ],
+  templateUrl: './course-upsert.component.html',
+  styleUrls: ['./course-upsert.component.css']
+})
+export class CourseUpsertComponent implements OnInit {
+  courseForm: FormGroup;
+  lessonGroup: FormGroup;
+  courseId: number | null = null;
+  initialState: Lesson = { title: '', content: '', courseId: 0, id: 0 };
+  existingLessonIds: number[] = [];
+
+  constructor(
+    private fb: FormBuilder,
+    private store: Store<{ courses: CourseState, lessons: LessonState }>,
+    private route: ActivatedRoute,
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object 
+  ) {
+    this.courseForm = this.fb.group({
+      title: ['', Validators.required],
+      description: ['', [Validators.required]],
+      teacherId: ['', [Validators.required]],
+      lessons: this.fb.array([])
+    });
+  }
+
+  ngOnInit(): void {
+    this.route.params.subscribe(params => {
+      const id = params['id'];
+      
+      if (id) {
+        this.courseId = +id;
+        this.store.select(selectCourseById(id)).subscribe(course => {
+          if (course) {
+            this.courseForm.patchValue({
+              title: course.title,
+              description: course.description,
+              teacherId: course.teacherId
+            });
+          }
+          this.store.select(selectLessonsByCourseId(id)).subscribe(lessons => {
+            this.existingLessonIds = lessons.map(lesson => lesson.id);
+            const existingLessonIdsInForm = this.lessons.controls.map(control => control.value.id);
+            lessons.forEach(lesson => {
+              if (!existingLessonIdsInForm.includes(lesson.id)) {
+                this.addLessonForm(lesson);
+              }
+            });
+          });
+        });
+      }
+      if (isPlatformBrowser(this.platformId)) {
+        this.courseForm.patchValue({
+          teacherId: sessionStorage.getItem('userId')
+        });
+      }
+     
+    });
+    this.store.dispatch(loadLessons({ courseId: this.courseId as number }));
+  }
+
+  get lessons(): FormArray {
+    return this.courseForm.get('lessons') as FormArray;
+  }
+
+  addLessonForm(lesson: Lesson) {
+    const lessonGroup = this.fb.group({
+      id: [lesson.id],
+      title: [lesson.title, Validators.required],
+      content: [lesson.content, Validators.required]
+    });
+    this.lessons.push(lessonGroup);
+  }
+
+  removeLessonForm(index: number) {
+    this.lessons.removeAt(index);
+  }
+
+  addLesson(lesson: Lesson) {
+    const lessonData = {
+      title: lesson.title,
+      content: lesson.content,
+      courseId: this.courseId
+    };
+    this.store.dispatch(addLesson({ courseId: this.courseId as number, lesson: lessonData as Lesson }));
+  }
+
+  updateLesson(lesson: Lesson) {
+    const lessonData = {
+      title: lesson.title,
+      content: lesson.content,
+      courseId: this.courseId
+    };
+    this.store.dispatch(updateLesson({ courseId: this.courseId as number, lesson: lessonData as Lesson }));
+  }
+
+  removeLesson(courseId: number, id: number) {
+    this.store.dispatch(deleteLesson({ courseId: courseId, id: id }));
+  }
+
+  onSubmit() {
+    const teacherId=null
+    if (typeof window !== 'undefined') {
+      const teacherId = sessionStorage.getItem('userId');
+    }
+
+    const courseData = {
+      ...this.courseForm.value,
+      teacherId
+    };
+
+    if (this.courseForm.valid) {
+      if (this.courseId) {
+        this.store.dispatch(updateCourse({ course: courseData }));
+
+        const currentLessonIds = this.lessons.controls.map(control => control.value.id);
+        const lessonsToRemove = this.existingLessonIds.filter(id => !currentLessonIds.includes(id));
+
+        lessonsToRemove.forEach(id => {
+          this.removeLesson(this.courseId as number, id);
+        });
+
+        this.lessons.controls.forEach((lessonGroup) => {
+          const lesson = lessonGroup.value;
+          if (lesson.id) {
+            this.updateLesson({ ...lesson, courseId: this.courseId });
+          } else {
+            this.addLesson({ ...lesson, courseId: this.courseId });
+          }
+        });
+      } else {
+        this.store.dispatch(addCourse({ course: courseData }));
+      }
+      this.router.navigate(['/courses-management']);
+    }
+  }
+}
+// Source: app\components\courses\courses.component.css
+// Source: app\components\courses\courses.component.html
+<div>
+    <!-- <h2>Courses</h2> -->
+   
+    <ul>
+
+     
+        @for(course of (courses$ | async);track course.id){
+          <app-course-details
+          [id]="course.id"
+          [title]="course.title"
+          [description]="course.description"
+          [lessons]="course.lessons"
+          [teacherId]="course.teacherId"
+          [role]="'student'"
+          >
+        
+        </app-course-details>
+          
+        <button (click)="joinCourse(course.id)">join</button>
+        <button (click)="leaveCourse(course.id)">leave</button>
+      
+        }  
+    </ul>
+  </div>
+  
+// Source: app\components\courses\courses.component.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { CoursesComponent } from './courses.component';
+
+describe('CoursesComponent', () => {
+  let component: CoursesComponent;
+  let fixture: ComponentFixture<CoursesComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [CoursesComponent]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(CoursesComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+// Source: app\components\courses\courses.component.ts
+import { Component, OnInit } from '@angular/core';
+import { Observable } from 'rxjs';
+import { Course } from '../../../models/course.model';
+import { selectAllCourses, selectCoursesById, selectLoading } from '../../../store/selectors/course.selector';
+import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { enrollInCourse, loadCourses, loadCoursesByStudentId, unenrollInCourse } from '../../../store/actions/course.actions';
+import { CourseDetailsComponent } from "../course-details/course-details.component";
+import { AsyncPipe } from '@angular/common';
+import { selectCurrentUser, selectUserState } from '../../../store/selectors/user.selector';
+import { User } from '../../../models/user.model';
+import { UserState } from '../../../store/state';
+
+@Component({
+  selector: 'app-courses',
+  standalone: true,
+  imports: [CourseDetailsComponent,AsyncPipe],
+  templateUrl: './courses.component.html',
+  styleUrl: './courses.component.css'
+})
+export class CoursesComponent implements OnInit {
+  courses$: Observable<Course[]>;
+  loading$: Observable<boolean>;
+  user$: Observable<User|null>;
+  userId: number|undefined=undefined;
+  constructor(private store: Store,private router: Router) {
+    this.user$ = this.store.select(selectCurrentUser);
+    this.courses$ = this.store.select(selectAllCourses);
+    this.loading$ = this.store.select(selectLoading);
+  }
+ 
+  ngOnInit() {
+    
+      this.store.dispatch(loadCourses());       
+      this.courses$ = this.store.select(selectCoursesById(this.userId));
+    };
+  
+  joinCourse(courseId: number) {  
+      this.store.dispatch(enrollInCourse({ courseId }));
+  }
+
+  leaveCourse(courseId: number) {
+    this.store.dispatch(unenrollInCourse({ courseId }));
+    
+
+  }
+
+}
+// Source: app\components\header\header.component.css
+.app-toolbar {
+    background-color: white;
+    /* position: fixed !important; */
+    /* margin-top: 0px; */
+    padding: 0; /* מסיר padding */
+    border-bottom: 1px solid lightgray; /* קו בתחתית ה-toolbar */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 80px !important; 
+}
+
+.mat-toolbar-row, .mat-toolbar-single-row {
+    height: 100px; /* גובה חדש עבור שורות ה-toolbar */
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    margin-left: 20px;
+}
+
+.logo-container img {
+    height: 40px; /* גובה התמונה */
+    width: auto; /* שומר על יחס גובה-רוחב */
+    max-width: 100%; /* מונע מהתמונה לחרוג מהרוחב של הקונטיינר */
+}
+
+.courses-text {
+    font-weight: bold;
+    font-size: 25px; /* גודל טקסט גדול יותר */
+    margin-left: 10px;
+    text-align: center; /* מרכז את הטקסט */
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    height: 80px;
+}
+
+
+.app-toolbar a:not(.login-button):hover {
+    background-color: #f0f0f0; /* צבע רקע בהעברת עכבר */
+}
+.app-toolbar a:not(.login-button)::after {
+    content: '';
+    position: absolute;
+    left: -100%; /* מתחיל מחוץ למסך משמאל */
+    bottom: 0px; /* הקו ירוק יהיה בדיוק מעל הקו התחתון של ה-toolbar */
+    width: 100%;
+    height: 3px;
+    background-color: green; /* קו ירוק */
+    transition: left 0.3s ease;
+}
+
+.app-toolbar a:hover::after {
+    left: 0; /* הקו זז למיקום של הלינק כאשר מעבירים את העכבר */
+}
+
+.app-toolbar a:not(:hover)::after {
+    left: -100%; /* הקו ייעלם כאשר לא מעבירים את העכבר */
+}
+
+.spacer {
+    flex: 1 1 auto;
+}
+
+/* סגנונות כלליים עבור הלינקים */
+.app-toolbar a:not(.login-button) {
+    text-decoration: none;
+    display: flex;
+    color: black;
+    margin: 0 20px; 
+    position: relative;
+    align-items: center; /* מרכז את התוכן אנכית */
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: normal; /* שינוי ל-regular */
+    height: 79px;
+}
+
+
+/* סגנונות ספציפיים ללינק הכניסה */
+.login-button {
+    border-radius: 20px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    color: white; /* צבע טקסט שונה */
+    
+    transition: background-color 0.3s; /* מעבר חלק לצבע */
+    margin-right: 20px;
+}
+
+/* שינוי צבע רקע כשמעבירים מעל הכפתור */
+.login-button {
+    border-radius: 20px; /* פינות מעוגלות */
+    padding: 8px 16px; /* רווח פנימי */
+    display: flex;
+    align-items: center;
+    text-decoration: none !important;
+    color: white; /* צבע טקסט שונה */
+    background-color: #91dadc; /* צבע רקע שונה */
+    transition: background-color 0.3s; /* מעבר חלק לצבע */
+    margin-right: 20px; /* רווח מימין */
+    border: 0px;
+}
+// Source: app\components\header\header.component.html
+<mat-toolbar color="primary" class="app-toolbar">
+  <div class="logo-container">
+    <img src="online-learning.png" alt="Logo" />
+    <span class="courses-text">Courses Online</span>
+  </div>
+
+  <nav class="nav-links">
+    <a mat-button routerLink="/home" routerLinkActive="activebutton">Home</a>
+    <a mat-button routerLink="/courses" routerLinkActive="activebutton">Courses</a>
+   
+  <p>{{(user$|async)?.name}}</p>
+   
+      <a mat-button routerLink="/courses-management" routerLinkActive="activebutton">Courses Management</a>
+   
+   
+      <a mat-button routerLink="/my-courses" routerLinkActive="activebutton">My Courses</a>
+  
+    <a mat-button routerLink="/about" routerLinkActive="activebutton">About</a>
+  </nav>
+  
+  <span class="spacer"></span>
+
+  
+  @if(isLoggedIn){
+    <button class="login-button" mat-button (click)="logout()">Logout</button>
+  }
+  @else {
+    <a mat-button routerLink="/auth" routerLinkActive="activebutton" ariaCurrentWhenActive="page" class="login-button">
+      Login 
+     
+    </a>
+  }
+</mat-toolbar>
+// Source: app\components\header\header.component.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { HeaderComponent } from './header.component';
+
+describe('HeaderComponent', () => {
+  let component: HeaderComponent;
+  let fixture: ComponentFixture<HeaderComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [HeaderComponent]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(HeaderComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+// Source: app\components\header\header.component.ts
+import { Component, OnInit } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AuthService } from '../../../services/auth.service';
+import { Store } from '@ngrx/store';
+import { select } from '@ngrx/store';
+import { Observable } from 'rxjs';
+import { User } from '../../../models/user.model';
+import { AsyncPipe } from '@angular/common';
+import { selectCurrentUser } from '../../../store/selectors/user.selector';
+
+@Component({
+  selector: 'app-header',
+  standalone: true,
+  imports: [RouterLink, RouterLinkActive, MatMenuModule, MatToolbarModule, MatIconModule,AsyncPipe],
+  templateUrl: './header.component.html',
+  styleUrl: './header.component.css'
+})
+export class HeaderComponent implements OnInit {
+  
+  constructor(private authService: AuthService,private store: Store) {}
+  user$: Observable<User|null>
+
+
+
+  isLoggedIn: boolean = false
+  ngOnInit(): void {
+    this.authService.getLoggedInStatus().subscribe(status => {
+      this.isLoggedIn = status; 
+    });
+    if (typeof window !== 'undefined') {
+      this.user$ = this.store.select(selectCurrentUser);
+  }}
+
+  logout() {
+    this.authService.logout();
+  }
+}
+// Source: app\components\home\home.component.css
+.home-container {
+    padding: 0;
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background-color: #f0f0f0; /* Light gray background */
+  }
+  
+  .home-toolbar {
+    justify-content: center;
+  }
+  
+  /* Hero Section */
+  .hero-section {
+    background-image: url('/home.png'); /* Add your hero background image */
+    background-size: cover;
+    background-position: center;
+    color: white;
+    text-align: center;
+    padding: 100px 20px;
+  }
+  
+  .hero-content {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  
+  .hero-content h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+  }
+  
+  .hero-content p {
+    font-size: 1.2em;
+    margin-bottom: 40px;
+  }
+  
+  .hero-content button {
+    font-size: 1.2em;
+    padding: 10px 20px;
+  }
+  
+  /* Features Section */
+  .features-section {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    margin: 40px 0;
+  }
+  
+  .feature-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 300px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 10px;
+  }
+  
+  .feature-icon {
+    font-size: 50px;
+    color: #1976d2; /* Primary color */
+    margin-bottom: 10px;
+  }
+  
+  .feature-card h2 {
+    margin: 10px 0;
+    font-size: 1.5em;
+  }
+  
+  .feature-card p {
+    color: #555;
+  }
+  
+  /* Testimonials Section */
+  .testimonial-section {
+    background-color: #ffffff;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  
+  .testimonial-section h2 {
+    font-size: 2em;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .testimonial-card {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 10px auto;
+    max-width: 500px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .testimonial-card p {
+    font-style: italic;
+    color: #555;
+  }
+  
+  .testimonial-card strong {
+    display: block;
+    margin-top: 10px;
+    color: #1976d2; /* Primary color */
+  }
+  
+  /* Call to Action Section */
+  .cta-section {
+    background-color: #1976d2; /* Primary color */
+    color: white;
+    text-align: center;
+    padding: 40px 20px;
+  }
+  
+  .cta-section h2 {
+    font-size: 2em;
+    margin-bottom: 20px;
+  }
+  
+  .cta-section button {
+    font-size: 1.2em;
+    padding: 10px 20px;
+  }
+// Source: app\components\home\home.component.html
+<div class="home-container">
+    <mat-toolbar color="primary" class="home-toolbar">
+     
+    </mat-toolbar>
+  
+    <!-- Hero Section -->
+    <div class="hero-section">
+      <div class="hero-content">
+        <h1>Transform Your Future with Our Online Courses</h1>
+        <p>Discover a variety of courses to enhance your skills and knowledge. Join us today and start learning!</p>
+        <button mat-raised-button color="accent" [routerLink]="['/register']">Get Started</button>
+      </div>
+    </div>
+  
+    <!-- Features Section -->
+    <div class="features-section">
+      <div class="feature-card">
+        <mat-icon class="feature-icon">school</mat-icon>
+        <h2>High Quality Courses</h2>
+        <p>Learn from industry experts with comprehensive and detailed courses.</p>
+      </div>
+  
+      <div class="feature-card">
+        <mat-icon class="feature-icon">schedule</mat-icon>
+        <h2>Flexible Schedule</h2>
+        <p>Study at your own pace, with access to courses anytime, anywhere.</p>
+      </div>
+  
+      <div class="feature-card">
+        <mat-icon class="feature-icon">support</mat-icon>
+        <h2>24/6 Support</h2>
+        <p>Get help whenever you need it with our round-the-clock support team.</p>
+      </div>
+    </div>
+  
+    <!-- Testimonials Section -->
+    <div class="testimonial-section">
+      <h2>What Our Students Say</h2>
+      <div class="testimonial-card">
+        <p>"This platform has changed my life! The courses are fantastic and the support team is always there to help."</p>
+        <strong>- Jane Doe</strong>
+      </div>
+  
+      <div class="testimonial-card">
+        <p>"I love the flexibility of studying at my own pace. Highly recommend to anyone looking to learn new skills."</p>
+        <strong>- John Smith</strong>
+      </div>
+    </div>
+  
+    <!-- Call to Action Section -->
+    <div class="cta-section">
+      <h2>Ready to Start Learning?</h2>
+      <button mat-raised-button color="primary" [routerLink]="['/auth']">Sign Up Now</button>
+    </div>
+  </div>
+// Source: app\components\home\home.component.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { HomeComponent } from './home.component';
+
+describe('HomeComponent', () => {
+  let component: HomeComponent;
+  let fixture: ComponentFixture<HomeComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [HomeComponent]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(HomeComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+// Source: app\components\home\home.component.ts
+import { Component } from '@angular/core';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { RouterModule } from '@angular/router';
+@Component({
+  selector: 'app-home',
+  standalone: true,
+  imports: [ 
+    MatToolbarModule,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    RouterModule
+  ],
+  templateUrl: './home.component.html',
+  styleUrl: './home.component.css'
+})
+export class HomeComponent {
+id: any;
+
+}
+// Source: app\components\lesson-form\lesson-form.component.css
+// Source: app\components\lesson-form\lesson-form.component.html
+<h1 mat-dialog-title>{{ lesson.id ? 'Edit Lesson' : 'Add Lesson' }}</h1>
+<div mat-dialog-content>
+  <mat-form-field appearance="fill">
+    <mat-label>Title</mat-label>
+    <input matInput [(ngModel)]="lesson.title" required>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Content</mat-label>
+    <textarea matInput [(ngModel)]="lesson.content" required></textarea>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="onNoClick()">Cancel</button>
+  <button mat-button (click)="onSave()">Save</button>
+</div>
+// Source: app\components\lesson-form\lesson-form.component.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { LessonFormComponent } from './lesson-form.component';
+
+describe('LessonFormComponent', () => {
+  let component: LessonFormComponent;
+  let fixture: ComponentFixture<LessonFormComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [LessonFormComponent]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(LessonFormComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+// Source: app\components\lesson-form\lesson-form.component.ts
+import { Component, Inject } from '@angular/core';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { Lesson } from '../../../models/lesson.model';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { FormsModule } from '@angular/forms';
+import { MatInputModule } from '@angular/material/input';
+@Component({
+  selector: 'app-lesson-form',
+  standalone: true,
+  imports: [MatFormFieldModule,FormsModule,MatInputModule],
+  templateUrl: './lesson-form.component.html',
+  styleUrl: './lesson-form.component.css'
+})
+export class LessonFormComponent {
+  lesson: Lesson;
+
+  constructor(
+    public dialogRef: MatDialogRef<LessonFormComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: Lesson
+  ) {
+    this.lesson = { ...data }; 
+  }
+
+  onNoClick(): void {
+    this.dialogRef.close();
+  }
+
+  onSave(): void {
+    this.dialogRef.close(this.lesson);
+  }
+}
+// Source: app\components\lessons-list\lessons-list.component.css
+.lessons-list-container {
+    background-color: #f0f0f0;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+  }
+  
+  .loading-spinner {
+    display: flex;
+    justify-content: center;
+    margin-top: 50px;
+  }
+  
+  .lesson-card {
+    background-color: #ffffff;
+    margin-bottom: 15px;
+    padding: 15px;
+    width: 100%;
+  }
+  
+  .no-lessons {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 1.2em;
+    color: #757575;
+  }
+  .flip-icon {
+    transform: scaleX(-1);
+  }
+  .add-lesson{
+    color: black !important;
+  }
+  
+// Source: app\components\lessons-list\lessons-list.component.html
+<div class="lessons-list-container">
+  @if(role=='teacher'){
+    <div class="header">
+      <button class="flip-icon" mat-icon-button color="accent" (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon> 
+      </button>
+    </div>}
+    @if(loading$ | async){
+        <div class="loading-spinner">
+            <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+          </div>
+    }
+    
+    @if(!(loading$ | async)){
+        <div>
+            <mat-list role="list">
+                @for (lesson of (lessons$ | async); track lesson.id) {
+                    <mat-card class="lesson-card mat-elevation-z3">
+                      <mat-card-header>
+                        <mat-card-title> {{ lesson.title }}</mat-card-title>
+                      </mat-card-header>
+                      <mat-card-content>
+                        <p>{{ lesson.content }}</p>
+                      </mat-card-content>
+                      @if(role == 'teacher'){
+                      <mat-card-actions>
+                        <button mat-icon-button color="accent" (click)="editLesson(lesson)">
+                          <span [innerHTML]="'edit' | textToIcon"></span>
+                        </button>
+                        <button mat-icon-button color="warn" (click)="deleteLesson(lesson.id)">
+                          <span [innerHTML]="'delete' | textToIcon"></span>
+                        </button>
+                      </mat-card-actions>}
+                    </mat-card>
+                  }
+            </mat-list>
+            @if ((lessons$ | async)?.length === 0) {
+              <div class="no-lessons">
+                <p>No lessons available for this course.</p>
+              </div>
+            }
+          </div>
+    }
+    @if(role == 'teacher'){
+      <button class="add-lesson" mat-raised-button color="primary" (click)="addLesson()">Add Lesson
+        <span [innerHTML]="'add' | textToIcon"></span>
+      </button>
+    }
+   
+   
+  </div>
+// Source: app\components\lessons-list\lessons-list.component.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { LessonsListComponent } from './lessons-list.component';
+
+describe('LessonsListComponent', () => {
+  let component: LessonsListComponent;
+  let fixture: ComponentFixture<LessonsListComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [LessonsListComponent]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(LessonsListComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+// Source: app\components\lessons-list\lessons-list.component.ts
+import { Component, Input, OnInit } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Lesson } from '../../../models/lesson.model';
+import { Observable } from 'rxjs';
+import { selectLessonsByCourseId, selectLoading } from '../../../store/selectors/lesson.selector';
+import { AsyncPipe } from '@angular/common';
+import { addLesson, deleteLesson, loadLessons, updateLesson } from '../../../store/actions/lesson.action';
+import { MatDialog } from '@angular/material/dialog';
+import { LessonFormComponent } from '../lesson-form/lesson-form.component';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
+import { MatCardModule } from '@angular/material/card';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { TextToIconPipe } from "../../pipes/text-to-icon.pipe";
+
+@Component({
+  selector: 'app-lessons-list',
+  standalone: true,
+  imports: [AsyncPipe, MatButtonModule, MatCardModule, MatIconModule, MatListModule, MatProgressSpinnerModule, TextToIconPipe],
+  templateUrl: './lessons-list.component.html',
+  styleUrls: ['./lessons-list.component.css']
+})
+export class LessonsListComponent implements OnInit {
+  lessons$: Observable<Lesson[]>;
+  loading$: Observable<boolean>;
+  id: number;
+  role: string; 
+
+  constructor(private store: Store,
+              private router: Router,
+              private route: ActivatedRoute,
+              public dialog: MatDialog) {}
+
+  ngOnInit() {
+   
+  
+    this.route.params.subscribe(params => {
+      this.id = +params['id'];
+if(this.id)
+    {  this.store.dispatch(loadLessons({ courseId: this.id }));
+      this.lessons$ = this.store.select(selectLessonsByCourseId(this.id));
+      this.loading$ = this.store.select(selectLoading);}
+    });
+
+    this.route.queryParams.subscribe(params => {
+      this.role = params['role']; 
+    });
+  }
+
+  deleteLesson(lessonId: number) {
+    this.store.dispatch(deleteLesson({ courseId: this.id, id: lessonId }));
+  }
+
+  addLesson() {
+    const dialogRef = this.dialog.open(LessonFormComponent, {
+      width: '400px',
+      data: {}
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.store.dispatch(addLesson({ courseId: this.id, lesson: result }));
+      }
+    });
+  }
+
+  editLesson(lesson: Lesson) {
+    const dialogRef = this.dialog.open(LessonFormComponent, {
+      width: '400px',
+      data: lesson
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.store.dispatch(updateLesson({ courseId: this.id, lesson: result }));
+      }
+    });
+  }
+  goBack() {
+    if(this.role==='teacher') 
+    this.router.navigate(['/courses-management']); 
+  else 
+    this.router.navigate(['/my-courses']);
+  }
+}
+// Source: app\components\my-courses\my-courses.component.css
+// Source: app\components\my-courses\my-courses.component.html
+<div>
+    <!-- <h2>Courses</h2> -->
+   
+    <ul>
+
+     
+        @for(course of (courses$ | async);track course.id){
+          <app-course-details
+          [id]="course.id"
+          [title]="course.title"
+          [description]="course.description"
+          [lessons]="course.lessons"
+          [teacherId]="course.teacherId"
+          [role]="'student'"
+          >
+        
+        </app-course-details>
+          
+            <button (click)="joinCourse(course.id)">join</button>
+        <button >leave</button>
+        }  
+    </ul>
+  </div>
+  
+// Source: app\components\my-courses\my-courses.component.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { MyCoursesComponent } from './my-courses.component';
+
+describe('MyCoursesComponent', () => {
+  let component: MyCoursesComponent;
+  let fixture: ComponentFixture<MyCoursesComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [MyCoursesComponent]
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(MyCoursesComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+// Source: app\components\my-courses\my-courses.component.ts
+import { Component, OnInit } from '@angular/core';
+import { Observable } from 'rxjs';
+import { Course } from '../../../models/course.model';
+import { selectAllCourses, selectCoursesById, selectLoading } from '../../../store/selectors/course.selector';
+import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { enrollInCourse, loadCourses, loadCoursesByStudentId } from '../../../store/actions/course.actions';
+import { CourseDetailsComponent } from "../course-details/course-details.component";
+import { AsyncPipe } from '@angular/common';
+import { selectCurrentUser, selectUserState } from '../../../store/selectors/user.selector';
+import { User } from '../../../models/user.model';
+import { UserState } from '../../../store/state';
+
+@Component({
+  selector: 'app-my-courses',
+  standalone: true,
+  imports: [CourseDetailsComponent,AsyncPipe],
+  templateUrl: './my-courses.component.html',
+  styleUrl: './my-courses.component.css'
+})
+export class MyCoursesComponent implements OnInit {
+  courses$: Observable<Course[]>;
+  loading$: Observable<boolean>;
+  user$: Observable<User|null>;
+  userId: number|undefined=undefined;
+  constructor(private store: Store,private router: Router) {
+    this.user$ = this.store.select(selectCurrentUser);
+    this.courses$ = this.store.select(selectCoursesById(this.userId)); // Use userId after it's set
+    this.loading$ = this.store.select(selectLoading);
+  }
+ 
+  ngOnInit() {
+    // Subscribe to user$ to get the userId
+    this.user$.subscribe(user => {
+      if (user) {
+        this.userId = user.id; // Set userId from the user object
+        this.store.dispatch(loadCoursesByStudentId({ studentId: this.userId })); // Dispatch action with userId
+        // Update courses$ observable with the new userId
+        this.courses$ = this.store.select(selectCoursesById(this.userId));
+      }
+    });
+  }
+  joinCourse(courseId: number) {  
+      this.store.dispatch(enrollInCourse({ courseId }));
+  }
+
+  leaveCourse(courseId: number,userId: number) {
+    
+
+  }
+
+}
+// Source: app\guards\manage-courses.guard.spec.ts
+import { TestBed } from '@angular/core/testing';
+import { CanActivateFn } from '@angular/router';
+
+import { manageCoursesGuard } from './manage-courses.guard';
+
+describe('manageCoursesGuard', () => {
+  const executeGuard: CanActivateFn = (...guardParameters) => 
+      TestBed.runInInjectionContext(() => manageCoursesGuard(...guardParameters));
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+  });
+
+  it('should be created', () => {
+    expect(executeGuard).toBeTruthy();
+  });
+});
+// Source: app\guards\manage-courses.guard.ts
+import { inject } from '@angular/core';
+import { CanActivateFn } from '@angular/router';
+import { UserService } from '../../services/user.service';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+import { log } from 'console';
+
+export const manageCoursesGuard: CanActivateFn = (route, state)=> {
+  const userService = inject(UserService)
+  let userId=null
+  if (typeof window !== 'undefined') {
+     userId = Number(sessionStorage.getItem('userId'));
+  }
+  if (!userId) {
+console.log('forbidden');
+
+    return false
+  }
+  
+  return userService.getUserById(userId).pipe(
+   
+    map(user =>{
+     if(user.role != 'teacher')
+      console.log('forbidden');
+
+      return user.role === 'teacher'}),
+    catchError(err => {
+        console.log('Error fetching user data'+userId);
+        return of(false); 
+    })
+);
+
+};
+// Source: app\guards\student.guard.spec.ts
+import { TestBed } from '@angular/core/testing';
+import { CanActivateFn } from '@angular/router';
+
+import { studentGuard } from './student.guard';
+
+describe('studentGuard', () => {
+  const executeGuard: CanActivateFn = (...guardParameters) => 
+      TestBed.runInInjectionContext(() => studentGuard(...guardParameters));
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+  });
+
+  it('should be created', () => {
+    expect(executeGuard).toBeTruthy();
+  });
+});
+// Source: app\guards\student.guard.ts
+import { CanActivateFn } from '@angular/router';
+import { UserService } from '../../services/user.service';
+import { inject } from '@angular/core';
+import { catchError, map, of } from 'rxjs';
+
+export const studentGuard: CanActivateFn = (route, state) => {
+  const userService = inject(UserService)
+  let userId =null;
+  if (typeof window !== 'undefined') {
+    userId= Number(sessionStorage.getItem('userId'))
+  }
+  if (!userId) {
+    console.log('forbidden');
+
+    return false
+  }
+  return userService.getUserById(userId).pipe(
+    map(user => user.role === 'student'),
+    catchError(err => {
+      console.log('Error fetching user data')
+        return of(false); 
+    })
+);
+
+};
+// Source: app\pipes\text-to-icon.pipe.spec.ts
+import { TextToIconPipe } from './text-to-icon.pipe';
+
+describe('TextToIconPipe', () => {
+  it('create an instance', () => {
+    const pipe = new TextToIconPipe();
+    expect(pipe).toBeTruthy();
+  });
+});
+// Source: app\pipes\text-to-icon.pipe.ts
+import { Pipe, PipeTransform } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+
+@Pipe({
+  name: 'textToIcon',
+  standalone: true
+})
+export class TextToIconPipe implements PipeTransform {
+  iconsForDescriptions:Array<{desc:string, icon:string}> = [
+    {desc: 'add', icon: './add.png'},
+    {desc: 'delete', icon: './delete.png'},
+    {desc: 'edit', icon: './edit.png'},
+  ]
+  
+  
+  constructor(private sanitizer: DomSanitizer) {}
+
+  transform(value: string): SafeHtml {
+    const iconPath = this.iconsForDescriptions.find(item => item.desc === value)?.icon;
+    return iconPath ? this.sanitizer.bypassSecurityTrustHtml(`<img src="${iconPath}" alt="${value} icon" style="width:27px; height:27px;" />`) : value;
+  }
+
+
+}
+// Source: index.html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CoursesManagementApp</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="mat-typography">
+  <app-root></app-root>
+</body>
+</html>
+// Source: main.server.ts
+import { bootstrapApplication } from '@angular/platform-browser';
+import { AppComponent } from './app/app.component';
+import { config } from './app/app.config.server';
+
+const bootstrap = () => bootstrapApplication(AppComponent, config);
+
+export default bootstrap;
+// Source: main.ts
+import { bootstrapApplication } from '@angular/platform-browser';
+import { appConfig } from './app/app.config';
+import { AppComponent } from './app/app.component';
+
+bootstrapApplication(AppComponent, appConfig)
+  .catch((err) => console.error(err));
+// Source: models\course.model.ts
+import { Lesson } from "./lesson.model";
+
+export class Course{
+    
+    constructor(
+    public id :number=0,
+    public title : string,
+    public description:string,
+    public teacherId : number, 
+    public lessons: Lesson[] 
+    ){
+     }
+}
+// Source: models\lesson.model.ts
+export class Lesson {
+    constructor(
+    public id :number,
+    public title : string,
+    public content:string,
+    public courseId : number,
+    
+    ){
+     }
+}
+// Source: models\user.model.ts
+export type UserRole =
+    'teacher' |
+    'student';
+
+export class User {
+    constructor(
+        public email: string,
+        public password: string,
+        public id?: number,
+        public name?: string,
+        public role?: UserRole 
+    ) {
+    }
+}
+// Source: services\auth.service.spec.ts
+import { TestBed } from '@angular/core/testing';
+
+import { AuthService } from './auth.service';
+
+describe('AuthService', () => {
+  let service: AuthService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(AuthService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+// Source: services\auth.service.ts
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, catchError, Observable, of, switchMap, tap } from 'rxjs';
+import { UserService } from './user.service';
+import { User } from '../models/user.model';
+import { Store } from '@ngrx/store';
+import { loginUserSuccess, logoutUser, registerUserFailure, registerUserSuccess } from '../store/actions/user.action';
+
+interface AuthResponse {
+  token: string; 
+  // user: User;
+  role: string;
+  userId: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+
+  private apiUrl = 'http://localhost:3000/api/auth';
+  private loggedInSubject = new BehaviorSubject<boolean>(this.isLoggedIn()); 
+  private roleSubject = new BehaviorSubject<string>(this.getRole()); 
+
+  constructor(private http: HttpClient, private userService: UserService, private store: Store) {}
+
+  register(name: string, email: string, password: string, role: string): Observable<any> {
+    const body = { name, email, password, role };
+    return this.http.post<any>(`${this.apiUrl}/register`, body).pipe(
+      tap(response => {
+        if (response) {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('authToken', response.token);
+            sessionStorage.setItem('userId', response.userId);
+          }
+          this.store.dispatch(registerUserSuccess({ user: response.user })); // Dispatch success action
+        }
+      }),
+      catchError(error => {
+        this.store.dispatch(registerUserFailure({ error })); // Dispatch failure action
+        return of(error); // Return the error for further handling
+      })
+    );
+}
+  
+  login(email: string, password: string): Observable<User> {
+    const body = { email, password };
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, body).pipe(
+      tap(response => {
+        if (response) {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('authToken', response.token);
+            sessionStorage.setItem('userId', response.userId);
+          }
+          this.loggedInSubject.next(true);
+        }
+      }),
+      switchMap(response => {
+      return this.userService.getUserById(Number(response.userId)).pipe(
+        tap(user => {
+          this.store.dispatch(loginUserSuccess({ user: user }));
+        })
+      );
+      })
+    );
+  }
+  
+  logout() {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('authToken');
+      this.loggedInSubject.next(false);
+    }
+   
+    this.store.dispatch(logoutUser());
+  }
+ 
+  isLoggedIn(): boolean {
+    const loggedIn = typeof window !== 'undefined' ? !!this.getToken() : false;
+    return loggedIn; 
+  }
+
+  getRole(): string {
+    if (typeof window !== 'undefined') {
+      const userId = sessionStorage.getItem('userId');
+      // Implement role retrieval logic if necessary
+    }
+    return '';  // default role is 'guest'
+  }
+
+  getToken(): string | null {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('authToken');
+    }
+    return null; 
+  }
+
+  getLoggedInStatus(): Observable<boolean> {
+    return this.loggedInSubject.asObservable();
+  }
+}
+// Source: services\course.service.spec.ts
+import { TestBed } from '@angular/core/testing';
+
+import { CourseService } from './course.service';
+
+describe('CourseService', () => {
+  let service: CourseService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(CourseService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+// Source: services\course.service.ts
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { Course } from '../models/course.model';
+import { cp } from 'fs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CourseService {
+  
+  private apiUrl = 'http://localhost:3000/api/courses'; 
+
+  constructor(private http: HttpClient) {}
+
+  
+  getCourses(): Observable<Course[]> {
+    if (typeof window !== 'undefined') {
+      if(sessionStorage.getItem('authToken') != null) 
+        return this.http.get<Course[]>(this.apiUrl).pipe(
+          catchError(this.handleError)
+        );
+        else return throwError('User not logged in');
+   }
+    else return throwError('User not logged in');
+  }
+
+  getCourseById(id: number): Observable<Course> {
+    return this.http.get<Course>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+  getCoursesByStudentId(studentId: number|undefined): Observable<Course[]> {
+    return this.http.get<Course[]>(`${this.apiUrl}/student/${studentId}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  addCourse(course: Course): Observable<Course> {
+    return this.http.post<Course>(this.apiUrl, {...course,teacherId:sessionStorage.getItem('userId')}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  updateCourse(course: Course): Observable<Course> {
+   
+    return this.http.put<Course>(`${this.apiUrl}/${course.id}`, course).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  deleteCourse(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+  enrollInCourse(courseId: string) {
+    const userId = sessionStorage.getItem('userId'); 
+   
+  
+    return this.http.post(`${this.apiUrl}/${courseId}/enroll`, { userId }, 
+    ).pipe(
+      catchError(this.handleError)
+    );
+    
+  }
+  unEnrollInCourse(courseId: string) {
+    const userId = sessionStorage.getItem('userId'); 
+   
+  
+    return this.http.post(`${this.apiUrl}/${courseId}/unenroll`, { userId }, 
+    ).pipe(
+      catchError(this.handleError)
+    );
+    
+  }
+  private handleError(error: HttpErrorResponse) {
+    console.log('error', error);
+    
+     let errorMessage = 'error: ' + error.error.message;
+    // if (error.error instanceof ErrorEvent) {
+    //     // זה קוד שמריץ בצד הלקוח
+    //     errorMessage = `שגיאה: ${error.error.message}`;
+    // } else {
+    //     // זה קוד שמריץ בצד השרת
+    //     errorMessage = `שגיאה קוד: ${error.status}, ${error.message}`;
+    // }
+    // console.error(errorMessage); // הדפסת השגיאה לקונסול
+     return throwError(errorMessage); // החזרת השגיאה
+}
+
+
+}
+// Source: services\lesson.service.spec.ts
+import { TestBed } from '@angular/core/testing';
+
+import { LessonService } from './lesson.service';
+
+describe('LessonService', () => {
+  let service: LessonService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(LessonService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+// Source: services\lesson.service.ts
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http'
+import { Injectable } from '@angular/core'
+import { Observable, throwError } from 'rxjs'
+import { catchError } from 'rxjs/operators'
+import { Lesson } from '../models/lesson.model'
+
+@Injectable({
+  providedIn: 'root'
+})
+export class LessonService {
+  private apiUrl = 'http://localhost:3000/api/courses'
+
+  constructor(private http: HttpClient) {}
+
+  getLessons(courseId: number): Observable<Lesson[]> {
+    if(courseId!=null)
+    return this.http.get<Lesson[]>(`${this.apiUrl}/${courseId}/lessons`).pipe(
+      catchError(this.handleError)
+    )
+    else
+    return throwError('Course ID is required');
+  }
+
+  getLessonById(courseId: number, id: number): Observable<Lesson> {
+    if(courseId!=null)
+    return this.http.get<Lesson>(`${this.apiUrl}/${courseId}/lessons/${id}`).pipe(
+      catchError(this.handleError)
+    )
+    else
+    return throwError('Course ID is required');
+  }
+
+  addLesson(courseId: number, lesson: Lesson): Observable<{ message: string, lessonId: number }> {
+    if(courseId!=null)
+    return this.http.post<{ message: string, lessonId: number }>(`${this.apiUrl}/${courseId}/lessons`, lesson).pipe(
+      catchError(this.handleError)
+    )
+    else
+    return throwError('Course ID is required');
+    
+  }
+
+  updateLesson(courseId: number, lesson: Lesson): Observable<{ message: string }> {
+    return this.http.put<{ message: string }>(`${this.apiUrl}/${courseId}/lessons/${lesson.id}`, lesson).pipe(
+      catchError(this.handleError)
+    )
+  }
+
+  deleteLesson(courseId: number, id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${courseId}/lessons/${id}`).pipe(
+      catchError(this.handleError)
+    )
+  }
+
+  private handleError(error: HttpErrorResponse) {
+    console.log('error', error);
+    
+     let errorMessage = 'error: ' + error.error.message;
+    // if (error.error instanceof ErrorEvent) {
+    //     // זה קוד שמריץ בצד הלקוח
+    //     errorMessage = `שגיאה: ${error.error.message}`;
+    // } else {
+    //     // זה קוד שמריץ בצד השרת
+    //     errorMessage = `שגיאה קוד: ${error.status}, ${error.message}`;
+    // }
+    // console.error(errorMessage); // הדפסת השגיאה לקונסול
+     return throwError(errorMessage); // החזרת השגיאה
+}
+
+  }
+
+// Source: services\user.service.spec.ts
+import { TestBed } from '@angular/core/testing';
+
+import { UserService } from './user.service';
+
+describe('UserService', () => {
+  let service: UserService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(UserService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+// Source: services\user.service.ts
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { User } from '../models/user.model';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class UserService {
+  private apiUrl = 'http://localhost:3000/api/users'; 
+  private usersSubject = new BehaviorSubject<User[]>([]);
+  public users$ = this.usersSubject.asObservable(); 
+
+  constructor(private http: HttpClient) {
+    
+    
+  }
+  
+
+  getUserById(id: number): Observable<User> {
+    
+    return this.http.get<User>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  addUser(user: User): void {
+    this.http.post<User>(this.apiUrl, user).pipe(
+      catchError(this.handleError)
+    ).subscribe(newUser => {
+      const currentUsers = this.usersSubject.value;
+      this.usersSubject.next([...currentUsers, newUser]); 
+    });
+  }
+
+  updateUser(user: User): void {
+    this.http.put<User>(`${this.apiUrl}/${user.id}`, user).pipe(
+      catchError(this.handleError)
+    ).subscribe(updatedUser => {
+      const currentUsers = this.usersSubject.value.map(u => u.id === updatedUser.id ? updatedUser : u);
+      this.usersSubject.next(currentUsers); 
+    });
+  }
+
+  deleteUser(id: number): void {
+    this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    ).subscribe(() => {
+      const currentUsers = this.usersSubject.value.filter(u => u.id !== id);
+      this.usersSubject.next(currentUsers); 
+    });
+  }
+
+  private handleError(error: HttpErrorResponse) {
+    console.log('error', error);
+    
+     let errorMessage = 'error: ' + error.error.message;
+    // if (error.error instanceof ErrorEvent) {
+    //     // זה קוד שמריץ בצד הלקוח
+    //     errorMessage = `שגיאה: ${error.error.message}`;
+    // } else {
+    //     // זה קוד שמריץ בצד השרת
+    //     errorMessage = `שגיאה קוד: ${error.status}, ${error.message}`;
+    // }
+    // console.error(errorMessage); // הדפסת השגיאה לקונסול
+     return throwError(errorMessage); // החזרת השגיאה
+}
+
+
+}
+// Source: store\actions\course.actions.ts
+import { createAction, props } from '@ngrx/store';
+import { Course } from '../../models/course.model';
+
+export const loadCourses = createAction('[Course List] Load Courses');
+
+export const loadCoursesSuccess = createAction(
+  '[Course List] Load Courses Success',
+  props<{ courses: Course[] }>()
+);
+
+export const loadCoursesFailure = createAction(
+  '[Course] Load Courses Failure',
+  props<{ error: any }>()
+);
+export const loadCoursesByStudentId = createAction('[Course List] Load Courses By Student Id',
+  props<{ studentId: number|undefined}>()
+)
+
+export const loadCoursesSuccessByStudentId = createAction(
+  '[Course List] Load Courses Success By Student Id',
+  props<{ courses: Course[] }>()
+);
+export const loadCoursesFailureByStudentId = createAction(
+  '[Course List] Load Courses Failure By Student Id',
+  props<{ error:any }>()
+);
+export const addCourse = createAction(
+  '[Course List] Add Course',
+  props<{ course: Course }>()
+);
+
+export const updateCourse = createAction(
+  '[Course List] Update Course',
+  props<{ course: Course }>()
+);
+
+export const deleteCourse = createAction(
+  '[Course List] Delete Course',
+  props<{ courseId: number }>()
+);
+
+
+export const enrollInCourse = createAction(
+  '[Course] Enroll In Course',
+  props<{ courseId: number }>()
+);
+
+export const enrollInCourseSuccess = createAction(
+  '[Course] Enroll In Course Success',
+  props<{ courseId: number }>()
+);
+
+export const enrollInCourseFailure = createAction(
+  '[Course] Enroll In Course Failure',
+  props<{ error: any }>()
+);
+
+export const unenrollInCourse = createAction(
+  '[Course] unEnroll In Course',
+  props<{ courseId: number }>()
+);
+
+export const unenrollInCourseSuccess = createAction(
+  '[Course] unEnroll In Course Success',
+  props<{ courseId: number }>()
+);
+
+export const unenrollInCourseFailure = createAction(
+  '[Course] unEnroll In Course Failure',
+  props<{ error: any }>()
+);
+// Source: store\actions\lesson.action.ts
+import { createAction, props } from '@ngrx/store';
+import { Lesson } from '../../models/lesson.model';
+
+// פעולה להוספת שיעור
+export const addLesson = createAction(
+    '[Lesson] Add Lesson',
+    props<{ courseId: number; lesson: Lesson }>()
+);
+
+// פעולה לעדכון שיעור
+export const updateLesson = createAction(
+    '[Lesson] Update Lesson',
+    props<{ courseId: number; lesson: Lesson }>()
+);
+
+// פעולה למחיקת שיעור
+export const deleteLesson = createAction(
+    '[Lesson] Delete Lesson',
+    props<{ courseId: number; id: number }>()
+);
+
+// פעולה לקבלת שיעורים
+export const loadLessons = createAction(
+    '[Lesson] Get Lessons',
+    props<{ courseId: number }>()
+);
+
+// פעולה לטעינת שיעורים בהצלחה
+export const loadLessonsSuccess = createAction(
+    '[Lesson] Load Lessons Success',
+    props<{ lessons: Lesson[] }>()
+);
+
+// פעולה לטעינת שיעורים עם שגיאה
+export const loadLessonsFailure = createAction(
+    '[Lesson] Load Lessons Failure',
+    props<{ error: any }>()
+);
+// Source: store\actions\user.action.ts
+
+import { createAction, props } from '@ngrx/store';
+import { User } from '../../models/user.model';
+
+
+export const loginUser = createAction('[User] Login User',  props<{ email: string; password: string }>());
+export const loginUserSuccess = createAction('[User] Login User Success',  props<{ user:User }>());
+export const loginUserFailure = createAction('[User] Login User Failure',  props<{ error:any }>());
+export const logoutUser = createAction('[User] Logout User');
+export const loadUser = createAction('[User] Load User');
+export const loadUserSuccess = createAction('[User] Load User Success', props<{ user: User }>());
+export const loadUserFailure = createAction('[User] Load User Failure', props<{ error: any }>());
+export const registerUser = createAction('[User] Register User', props<{ name: string; email: string; password: string; role: string }>());
+export const registerUserSuccess = createAction('[User] Register User Success', props<{ user: User }>());
+export const registerUserFailure = createAction('[User] Register User Failure', props<{ error: any }>());
+// Source: store\effects\course.effects.ts
+import { Injectable, inject } from '@angular/core';
+import { Actions, createEffect, ofType } from '@ngrx/effects';
+import { of } from 'rxjs';
+import { catchError, map, mergeMap } from 'rxjs/operators';
+import { CourseService } from '../../services/course.service';
+import { loadCourses, loadCoursesSuccess, loadCoursesFailure, addCourse, updateCourse, deleteCourse, enrollInCourse, enrollInCourseSuccess, enrollInCourseFailure, unenrollInCourseSuccess, unenrollInCourseFailure, loadCoursesByStudentId, loadCoursesSuccessByStudentId, loadCoursesFailureByStudentId } from '../actions/course.actions';
+import { Action } from 'rxjs/internal/scheduler/Action';
+
+@Injectable()
+export class CourseEffects {
+  private actions$ = inject(Actions);
+  private courseService = inject(CourseService);
+
+  loadCourses$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadCourses),
+      mergeMap(() =>
+        this.courseService.getCourses().pipe(
+          map(courses => loadCoursesSuccess({ courses })),
+          catchError(error => {
+            //console.error('Error loading courses:', error);
+            return of(loadCoursesFailure({ error }));
+          })
+        )
+      )
+    )
+  );
+  loadCoursesByStudentId$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadCoursesByStudentId),
+      mergeMap((action) =>
+        this.courseService.getCoursesByStudentId(action.studentId).pipe(
+          map(courses => loadCoursesSuccessByStudentId({ courses })),
+          catchError(error => {
+            //console.error('Error loading courses:', error);
+            return of(loadCoursesFailureByStudentId({ error }));
+          })
+        )
+      )
+    )
+  );
+
+  addCourse$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(addCourse),
+      mergeMap(action =>
+        this.courseService.addCourse(action.course).pipe(
+          map(response => {
+        
+            return loadCourses();
+          }),
+          catchError(error => {
+         //   console.error('Error adding course:', error);
+            return of(loadCoursesFailure({ error }));
+          })
+        )
+      )
+    )
+  );
+
+  updateCourse$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(updateCourse),
+      mergeMap(action =>
+        this.courseService.updateCourse(action.course).pipe(
+          map(() => {
+           
+            return loadCourses();
+          }),
+          catchError(error => {
+            //console.error('Error updating course:', error);
+            return of(loadCoursesFailure({ error }));
+          })
+        )
+      )
+    )
+  );
+
+  deleteCourse$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(deleteCourse),
+      mergeMap(action =>
+        this.courseService.deleteCourse(action.courseId).pipe(
+          map(() => {
+
+            return loadCourses();
+          }),
+          catchError(error => {
+           // console.error('Error deleting course:', error);
+            return of(loadCoursesFailure({ error }));
+          })
+        )
+      )
+    )
+  );
+  enrollInCourse$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(enrollInCourse),
+      mergeMap(action =>
+        this.courseService.enrollInCourse(action.courseId.toString()).pipe(
+          map(() => enrollInCourseSuccess({ courseId: action.courseId })),
+          catchError(error => of(enrollInCourseFailure({ error })))
+        )
+      )
+    )
+  );
+  unenrollInCourse$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(enrollInCourse),
+      mergeMap(action =>
+        this.courseService.unEnrollInCourse(action.courseId.toString()).pipe(
+          map(() => unenrollInCourseSuccess({ courseId: action.courseId })),
+          catchError(error => of(unenrollInCourseFailure({ error })))
+        )
+      )
+    )
+  );
+}
+// Source: store\effects\lesson.effects.ts
+import { Injectable, inject } from '@angular/core'
+import { Actions, createEffect, ofType } from '@ngrx/effects'
+import { of } from 'rxjs'
+import { catchError, map, mergeMap } from 'rxjs/operators'
+import { LessonService } from '../../services/lesson.service'
+import { loadLessons, loadLessonsSuccess, loadLessonsFailure, addLesson, updateLesson, deleteLesson } from '../actions/lesson.action'
+
+@Injectable()
+export class LessonEffects {
+  private actions$ = inject(Actions)
+  private lessonService = inject(LessonService)
+
+  loadLessons$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadLessons),
+      mergeMap(action =>
+        this.lessonService.getLessons(action.courseId).pipe(
+         
+          
+          map(lessons =>  loadLessonsSuccess({ lessons })),
+          catchError(error => {
+        //    console.error('Error loading lessons:', error)
+            return of(loadLessonsFailure({ error }))
+          })
+        )
+      )
+    )
+  )
+
+  addLesson$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(addLesson),
+      mergeMap(action =>
+        this.lessonService.addLesson(action.courseId, action.lesson).pipe(
+          map(response => {
+          
+            return loadLessons({courseId:action.courseId}) 
+          }),
+          catchError(error => {
+           // console.error('Error adding lesson:', error)
+            return of(loadLessonsFailure({ error }))
+          })
+        )
+      )
+    )
+  )
+
+  updateLesson$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(updateLesson),
+      mergeMap(action =>
+        this.lessonService.updateLesson(action.courseId, action.lesson).pipe(
+          map(() => {
+           
+            return loadLessons({courseId:action.courseId}) 
+          }),
+          catchError(error => {
+          //  console.error('Error updating lesson:', error)
+            return of(loadLessonsFailure({ error }))
+          })
+        )
+      )
+    )
+  )
+
+  deleteLesson$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(deleteLesson),
+      mergeMap(action =>
+        this.lessonService.deleteLesson(action.courseId, action.id).pipe(
+          map(() => {
+         
+            return loadLessons({courseId:action.courseId}) 
+          }),
+          catchError(error => {
+            //console.error('Error deleting lesson:', error)
+            return of(loadLessonsFailure({ error }))
+          })
+        )
+      )
+    )
+  )
+}
+// Source: store\effects\user.effects.ts
+import { Injectable } from '@angular/core';
+import { Actions, createEffect, ofType } from '@ngrx/effects';
+import { AuthService } from '../../services/auth.service';
+import { loginUser, loginUserFailure, loginUserSuccess, loadUser, loadUserSuccess, loadUserFailure, registerUser, registerUserSuccess, registerUserFailure } from '../actions/user.action';
+import { catchError, map, mergeMap, switchMap, withLatestFrom } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { Store } from '@ngrx/store';
+import { User } from '../../models/user.model';
+import { UserState } from '../reducers/user.reducer'; // Adjust the import path as necessary
+import { UserService } from '../../services/user.service';
+
+@Injectable()
+export class UserEffects {
+  constructor(
+    private actions$: Actions,
+    private authService: AuthService,
+    private userService: UserService,
+    private store: Store<{ user: UserState }> // Specify the type of the state
+  ) {}
+
+  loginUser$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loginUser),
+      switchMap(({ email, password }) =>
+        this.authService.login(email, password).pipe(
+          map(user => loginUserSuccess({ user })), // Assuming user is of type User
+          catchError(error => of(loginUserFailure({ error })))
+        )
+      )
+    )
+  );
+
+  registerUser$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(registerUser),
+      mergeMap(action =>
+        this.authService.register(action.name, action.email, action.password, action.role).pipe(
+          map(user => registerUserSuccess({ user })), // Dispatch success action
+          catchError(error => of(registerUserFailure({ error }))) // Dispatch failure action
+        )
+      )
+    )
+  );
+  loadUser$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadUser),
+      withLatestFrom(this.store.select(state => state.user.user)), // Get the user state
+      switchMap(([action, user]) => {
+        if (user && user.id) { // Check if user exists and has an ID
+          return this.userService.getUserById(user.id).pipe(
+            map(userData => loadUserSuccess({ user: userData })),
+            catchError(error => of(loadUserFailure({ error })))
+          );
+        } else {
+          return of(loadUserFailure({ error: 'User ID not found' })); // Handle case where user ID is not available
+        }
+      })
+    )
+  );
+}
+// Source: store\reducers\course.reducers.ts
+import { createReducer, on } from '@ngrx/store';
+import { Course } from '../../models/course.model';
+import * as CourseActions from '../actions/course.actions';
+
+export interface CourseState {
+  courses: Course[];
+  loading: boolean;
+  error: string | null;
+}
+
+export const initialCourseState: CourseState = {
+  courses: [],
+  loading: false,
+  error: null
+};
+
+export const courseReducer = createReducer(
+  initialCourseState,
+  on(CourseActions.loadCourses, state => ({ ...state, loading: true })),
+ 
+  on(CourseActions.loadCoursesSuccess, (state, { courses }) => ({
+    ...state,
+    courses,
+    loading: false,
+    error: null
+  })),
+  on(CourseActions.loadCoursesFailure, (state, { error }) => ({
+    ...state,
+    loading: false,
+    error
+  })),
+  on(CourseActions.loadCoursesByStudentId, (state) => ({
+    ...state,
+    loading: true,
+    error: null,
+  })),
+  on(CourseActions.loadCoursesSuccessByStudentId, (state, { courses }) => ({
+    ...state,
+    loading: false,
+    courses: courses,
+  })),
+  on(CourseActions.loadCoursesFailureByStudentId, (state, { error }) => ({
+    ...state,
+    loading: false,
+    error: error,
+  })),
+  on(CourseActions.addCourse, (state, { course }) => ({
+    ...state,
+    courses: [...state.courses, course]
+  })),
+  on(CourseActions.updateCourse, (state, { course }) => ({
+    ...state,
+    courses: state.courses.map(c => (c.id === course.id ? course : c))
+  })),
+  on(CourseActions.deleteCourse, (state, { courseId }) => ({
+    ...state,
+    courses: state.courses.filter(c => c.id !== courseId)
+  })),
+  on(CourseActions.deleteCourse, (state, { courseId }) => ({
+    ...state,
+    error: null,
+  })),
+  on(CourseActions.enrollInCourseFailure, (state, { error }) => ({
+    ...state,
+    error,
+  })),
+  on(CourseActions.enrollInCourseFailure, (state, { error }) => ({
+    ...state,
+    error,
+  }))
+);
+
+ 
+// Source: store\reducers\lesson.reducer.ts
+import { Action, createReducer, on } from "@ngrx/store";
+
+import {  LessonState, initialLessonState } from "../state";
+import { addLesson, deleteLesson, loadLessonsFailure, loadLessonsSuccess, updateLesson } from "../actions/lesson.action";
+
+
+const _lessonReducer = createReducer(
+    initialLessonState ,
+    on(addLesson, (state, { lesson }) => ({
+        ...state,
+        Lessons: [...state.lessons, lesson]
+    })),
+    on(updateLesson, (state, { lesson }) => ({
+        ...state,
+        Lessons: state.lessons.map(s => s.id === lesson.id ? lesson : s)
+    })),
+    on(deleteLesson, (state, { id }) => ({
+        ...state,
+        Lessons: state.lessons.filter(Lesson => Lesson.id !== id)
+    })),
+    on(loadLessonsSuccess, (state, { lessons }) => ({
+        ...state,
+        lessons: lessons 
+    })),
+    on(loadLessonsFailure, (state, { error }) => ({
+        ...state,
+        
+        error: error 
+    }))
+);
+
+export function lessonReducer(state: LessonState | undefined, action: Action) {
+    return _lessonReducer(state, action);
+}
+// Source: store\reducers\user.reducer.ts
+import { createReducer, on } from '@ngrx/store';
+import { loginUser, loginUserSuccess, loginUserFailure, logoutUser, loadUser, loadUserSuccess, loadUserFailure, registerUserSuccess, registerUserFailure } from '../actions/user.action';
+import { User } from '../../models/user.model';
+
+export interface UserState {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+}
+
+export const initialState: UserState = {
+  user: null,
+  loading: false,
+  error: null,
+};
+
+export const userReducer = createReducer(
+  initialState,
+  on(loginUser, (state) => ({
+    ...state,
+    loading: true,
+    error: null,
+  })),
+  on(loginUserSuccess, (state, { user }) => ({
+    ...state,
+    loading: false,
+    user: user,
+    error: null,
+  })),
+  on(loginUserFailure, (state, { error }) => ({
+    ...state,
+    loading: false,
+    error: error,
+  })),
+  on(registerUserSuccess, (state, { user }) => ({
+    ...state,
+    user,
+    error: null,
+  })),
+ 
+  on(registerUserFailure, (state, { error }) => ({
+    ...state,
+    error,
+  }))
+  ,on(logoutUser, (state) => ({
+    ...state,
+    user: null,
+  })),
+  on(loadUser, (state) => ({
+    ...state,
+    loading: true,
+    error: null,
+  })),
+  on(loadUserSuccess, (state, { user }) => ({
+    ...state,
+    loading: false,
+    user: user,
+    error: null,
+  })),
+  on(loadUserFailure, (state, { error }) => ({
+    ...state,
+    loading: false,
+    error: error,
+  }))
+);
+
+  
+// Source: store\selectors\course.selector.ts
+import { createFeatureSelector, createSelector } from '@ngrx/store';
+import { CourseState } from '../reducers/course.reducers';
+
+export const selectCourseState = createFeatureSelector<CourseState>('courses');
+
+export const selectAllCourses = createSelector(
+  selectCourseState,
+  (state: CourseState) => state.courses
+)
+
+export const selectLoading = createSelector(
+  selectCourseState,
+  (state: CourseState) => state.loading
+)
+
+export const selectCourseById = (courseId: number) => createSelector(
+  selectCourseState,
+  (state: CourseState) => state.courses.find(course => course.id == courseId) 
+)
+export const selectCoursesById = (studentId: number|undefined) => createSelector(
+  selectCourseState,
+  (state: CourseState) => state.courses)
+
+// Source: store\selectors\lesson.selector.ts
+import { createFeatureSelector, createSelector } from '@ngrx/store';
+import { LessonState } from '../state';
+
+export const selectLessonState = createFeatureSelector<LessonState>('lessons');
+
+export const selectLessonsByCourseId = (courseId: number) => 
+  createSelector(
+    selectLessonState, 
+    (state:LessonState) => state.lessons.filter(lesson => lesson.courseId == courseId)
+  );
+
+export const selectAllLessons = createSelector(
+  selectLessonState,
+  (state: LessonState) => state.lessons
+);
+
+export const selectLoading = createSelector(
+  selectLessonState,
+  (state: LessonState) => state.loading
+);
+
+export const selectError = createSelector(
+  selectLessonState,
+  (state: LessonState) => state.error
+);
+// Source: store\selectors\user.selector.ts
+import { createFeatureSelector, createSelector } from '@ngrx/store';
+import { CourseState } from '../reducers/course.reducers';
+import { UserState } from '../state';
+export const selectUserState = createFeatureSelector<UserState>('users');
+
+export const selectCurrentUser = createSelector(
+    selectUserState,
+    (state: UserState) => state.user
+);
+// Source: store\state.ts
+import { Course } from "../models/course.model";
+import { Lesson } from "../models/lesson.model";
+import { User } from "../models/user.model";
+
+export interface AppState {
+    courses: CourseState;
+    users: UserState;
+    lessons: LessonState;
+  }
+  
+  export interface CourseState {
+    courses: Course[];
+    loading: boolean;
+    error: string | null;
+  }
+  
+  export interface UserState {
+    user: User|null
+    loading: boolean;
+    error: string | null;
+  }
+  
+  export interface LessonState {
+    lessons: Lesson[];
+    loading: boolean;
+    error: string | null;
+  }
+  
+  export const initialCourseState: CourseState = {
+    courses: [],
+    loading: false,
+    error: null
+};
+
+export const initialUserState: UserState = {
+    user: new User('','',0,'','student'),
+    loading: false,
+    error: null
+};
+
+export const initialLessonState: LessonState = {
+    lessons: [],
+    loading: false,
+    error: null
+};
+
+export const initialState: AppState = {
+    courses: initialCourseState,
+    users: initialUserState,
+    lessons: initialLessonState
+};
+// Source: styles.css
+/* You can add global styles to this file, and also import other style files */
+@import "../node_modules/@angular/material/prebuilt-themes/azure-blue.css";
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+.full-width-icon-button {
+ 
+    display: flex; /* Use flexbox to align items */
+    justify-content: center; /* Center the icon horizontally */
+    align-items: center; /* Center the icon vertically */
+  }
+  
+  .full-width-icon-button span {
+    width: 100%; /* Make the span fill the button */
+    text-align: center; /* Center the text/icon */
+  }
+  

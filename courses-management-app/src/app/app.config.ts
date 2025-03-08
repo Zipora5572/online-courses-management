@@ -11,6 +11,8 @@ import { CourseEffects } from '../store/effects/course.effects'; // הוסף א�
 import { lessonReducer } from '../store/reducers/lesson.reducer';
 import { LessonEffects } from '../store/effects/lesson.effects';
 import { authInterceptor } from './auth.interceptor';
+import { userReducer } from '../store/reducers/user.reducer';
+import { UserEffects } from '../store/effects/user.effects';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,9 +23,10 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     provideStore({ 
       courses: courseReducer, 
-      lessons: lessonReducer
+      lessons: lessonReducer,
+      user: userReducer
     }), 
-    provideEffects([CourseEffects, LessonEffects]) ,
+    provideEffects([CourseEffects, LessonEffects,UserEffects]) ,
      provideHttpClient(withInterceptors([authInterceptor])),
 
   ]

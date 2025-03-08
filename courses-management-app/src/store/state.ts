@@ -10,12 +10,13 @@ export interface AppState {
   
   export interface CourseState {
     courses: Course[];
+    currentUserCourses:Course[]
     loading: boolean;
     error: string | null;
   }
   
   export interface UserState {
-    user: User
+    user: User|null
     loading: boolean;
     error: string | null;
   }
@@ -28,12 +29,13 @@ export interface AppState {
   
   export const initialCourseState: CourseState = {
     courses: [],
+    currentUserCourses: [],
     loading: false,
     error: null
 };
 
 export const initialUserState: UserState = {
-    user: new User(0,'','','','student'),
+    user: new User('','',0,'','student'),
     loading: false,
     error: null
 };

@@ -18,3 +18,7 @@ export const selectCourseById = (courseId: number) => createSelector(
   (state: CourseState) => state.courses.find(course => course.id == courseId) 
 )
 
+export const selectCurrentUserCourses = createSelector(
+  selectCourseState,
+  (state: CourseState) => state.currentUserCourses
+);

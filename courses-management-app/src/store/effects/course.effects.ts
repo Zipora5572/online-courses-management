@@ -3,7 +3,8 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
 import { catchError, map, mergeMap } from 'rxjs/operators';
 import { CourseService } from '../../services/course.service';
-import { loadCourses, loadCoursesSuccess, loadCoursesFailure, addCourse, updateCourse, deleteCourse, enrollInCourse, enrollInCourseSuccess, enrollInCourseFailure, unenrollInCourseSuccess, unenrollInCourseFailure } from '../actions/course.actions';
+import { loadCourses, loadCoursesSuccess, loadCoursesFailure, addCourse, updateCourse, deleteCourse, enrollInCourse, enrollInCourseSuccess, enrollInCourseFailure, unenrollInCourseSuccess, unenrollInCourseFailure, loadCoursesByStudentId, loadCoursesSuccessByStudentId, loadCoursesFailureByStudentId, unenrollInCourse } from '../actions/course.actions';
+import { Action } from 'rxjs/internal/scheduler/Action';
 
 @Injectable()
 export class CourseEffects {
@@ -19,6 +20,20 @@ export class CourseEffects {
           catchError(error => {
             //console.error('Error loading courses:', error);
             return of(loadCoursesFailure({ error }));
+          })
+        )
+      )
+    )
+  );
+  loadCoursesByStudentId$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(loadCoursesByStudentId),
+      mergeMap((action) =>
+        this.courseService.getCoursesByStudentId(action.studentId).pipe(
+          map(courses => loadCoursesSuccessByStudentId({ courses })),
+          catchError(error => {
+            //console.error('Error loading courses:', error);
+            return of(loadCoursesFailureByStudentId({ error }));
           })
         )
       )
@@ -91,7 +106,7 @@ export class CourseEffects {
   );
   unenrollInCourse$ = createEffect(() =>
     this.actions$.pipe(
-      ofType(enrollInCourse),
+      ofType(unenrollInCourse),
       mergeMap(action =>
         this.courseService.unEnrollInCourse(action.courseId.toString()).pipe(
           map(() => unenrollInCourseSuccess({ courseId: action.courseId })),

@@ -4,7 +4,7 @@
     <ul>
 
      
-        @for(course of (currentUserCourses$ | async);track course.id){
+        @for(course of (courses$ | async);track course.id){
           <app-course-details
           [id]="course.id"
           [title]="course.title"
@@ -16,9 +16,9 @@
         
         </app-course-details>
           
-        <!-- <button (click)="joinCourse(course.id)">join</button> -->
-        <button (click)="leaveCourse(course.id)">leave</button>
-        
+        <button (click)="joinCourse(course.id)">join</button>
+        <!-- <button (click)="leaveCourse(course.id)">leave</button> -->
+      
         }  
     </ul>
   </div>

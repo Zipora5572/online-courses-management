@@ -12,7 +12,18 @@ export const loadCoursesFailure = createAction(
   '[Course] Load Courses Failure',
   props<{ error: any }>()
 );
+export const loadCoursesByStudentId = createAction('[Course List] Load Courses By Student Id',
+  props<{ studentId: number|undefined}>()
+)
 
+export const loadCoursesSuccessByStudentId = createAction(
+  '[Course List] Load Courses Success By Student Id',
+  props<{ courses: Course[] }>()
+);
+export const loadCoursesFailureByStudentId = createAction(
+  '[Course List] Load Courses Failure By Student Id',
+  props<{ error:any }>()
+);
 export const addCourse = createAction(
   '[Course List] Add Course',
   props<{ course: Course }>()

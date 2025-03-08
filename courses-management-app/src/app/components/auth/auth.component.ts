@@ -7,8 +7,10 @@ import { MatOptionModule } from '@angular/material/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../../services/auth.service';
-import { UserRole } from '../../../models/user.model';
+import { User, UserRole } from '../../../models/user.model';
 import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { loginUser } from '../../../store/actions/user.action';
 
 @Component({
   selector: 'app-auth',
@@ -23,7 +25,12 @@ export class AuthComponent {
   isLoginMode: boolean = true;
   roles: UserRole[] = ['teacher', 'student'];
 
-  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router) {
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router,
+    private store: Store
+  ) {
     this.initializeForm();
   }
 
@@ -69,6 +76,7 @@ export class AuthComponent {
 
   login(email: string, password: string) {
     this.authService.login(email, password).subscribe(response => {
+      this.store.dispatch(loginUser({ email, password }));
       this.router.navigate(['/home']);
     });
   }

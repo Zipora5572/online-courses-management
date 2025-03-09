@@ -18,10 +18,9 @@ export class AppComponent {
   ngOnInit() {
     let userId = null;
     if (typeof window !== 'undefined') {
-      const userId = sessionStorage.getItem('userId');
-
+       userId = sessionStorage.getItem('userId');
     }
-    if (userId) {
+    if (userId) {   
       this.userService.getUserById(+userId).subscribe(user => {
         this.store.dispatch(loginUserSuccess({ user })); 
       });

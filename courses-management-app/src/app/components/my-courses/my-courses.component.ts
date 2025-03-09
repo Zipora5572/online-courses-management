@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Course } from '../../../models/course.model';
 import { selectCurrentUserCourses, selectLoading } from '../../../store/selectors/course.selector';
-import { Store } from '@ngrx/store';
+import { select, Store } from '@ngrx/store';
 import { enrollInCourse, loadCoursesByStudentId, unenrollInCourse } from '../../../store/actions/course.actions';
 import { CourseDetailsComponent } from "../course-details/course-details.component";
 import { AsyncPipe } from '@angular/common';
@@ -26,26 +26,25 @@ export class MyCoursesComponent implements OnInit {
   constructor(private store: Store) {
     this.user$ = this.store.select(selectCurrentUser);
     this.loading$ = this.store.select(selectLoading);
-    this.store.dispatch(loadUser())
-    this.user$.subscribe(user => {
-      if (user) {
-        this.userId = user.id; 
-        
-        
-        this.store.dispatch(loadCoursesByStudentId({studentId:this.userId})); 
-
-
-        this.currentUserCourses$ = this.store.select(selectCurrentUserCourses)
-        
-        
-      }
-    })
+    this.currentUserCourses$ = this.store.select(selectCurrentUserCourses)    
+    this.currentUserCourses$.subscribe((currentUser)=>console.log(currentUser));
+    
+    // this.store.dispatch(loadUser())
+    // this.user$.subscribe(user => {
+    //   if (user) {
+    //     this.userId = user.id; 
+    //     this.store.dispatch(loadCoursesByStudentId({studentId:this.userId})); 
+    //     this.currentUserCourses$ = this.store.select(selectCurrentUserCourses)    
+    //   }
+    // })
   }
  
   ngOnInit() {
-    this.user$ = this.store.select(selectCurrentUser);
     this.store.dispatch(loadUser())
-    // Subscribe to user$ to get the userId
+
+    this.user$ = this.store.select(selectCurrentUser);
+    // this.store.dispatch(loadUser())
+    
     // this.user$.subscribe(user => {
     //   if (user) {
     //     this.userId = user.id; // Set userId from the user object
@@ -55,6 +54,15 @@ export class MyCoursesComponent implements OnInit {
     //     this.currentUserCourses$ = this.store.pipe(select(selectCurrentUserCourses));
     //   }
     // });
+    this.user$.subscribe(user => {
+     if (user) {
+        console.log('user'+user);
+        
+        this.userId = user.id; 
+        this.store.dispatch(loadCoursesByStudentId({studentId:this.userId})); 
+        this.currentUserCourses$ = this.store.select(selectCurrentUserCourses)    
+      }
+    })
   }
   joinCourse(courseId: number) {  
       this.store.dispatch(enrollInCourse({ courseId }));

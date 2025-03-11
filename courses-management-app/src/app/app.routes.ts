@@ -22,6 +22,7 @@ export const routes: Routes = [
     { path: 'about', component: AboutComponent },
     { path: 'home', component: HomeComponent },
     { path: 'course/:id/lessons', component: LessonsListComponent },
-    { path: '', redirectTo: '/home', pathMatch: 'full' },
+    { path: '', component: HomeComponent },
     { path: 'course/:id', component: CourseDetailsComponent },
+    { path: '**', redirectTo: '/login' }
     ];
